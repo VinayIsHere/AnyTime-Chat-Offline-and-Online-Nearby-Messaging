@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>AnyTime Chat</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      SECRET PATH PREFIX (AD-08, docs/ARCHITECTURE.md section 10).
+
+      SUBSTITUTION CONTRACT for the C++ asset server: while serving this file,
+      replace the quoted placeholder on the script line below with
+      "/<64-hex-token>/". It appears exactly once in the whole document, so
+      replace-first and replace-all behave identically.
+
+      Note the placeholder and the global are deliberately spelled DIFFERENTLY.
+      A single token would appear twice on that line — once as the property name
+      and once as the value — and a replace-all would rewrite the property name
+      into `window./abc123/`, which is a syntax error. Keeping them distinct
+      makes the substitution safe whether it replaces once or globally.
+
+      Doing this server-side rather than with a post-load runJavaScript()
+      injection is what makes it RACE-FREE: there is never a moment where the
+      page has loaded but does not yet know its credential.
+
+      Under `vite dev` the placeholder is served untouched, and api/base.ts
+      detects that and falls back to "/". Never hard-code a real token here.
+    -->
+    <script>
+      window.__AT_BASE__ = '%%AT_BASE%%';
+    </script>
+
+    <style>
+      * { -webkit-tap-highlight-color: transparent; }
+      html, body, #root { height: 100%; margin: 0; }
+      body { overscroll-behavior: none; }
+      /* The app draws its own scroll regions; the document never scrolls. */
+      body { overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

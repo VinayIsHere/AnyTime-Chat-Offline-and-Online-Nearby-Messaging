@@ -1,0 +1,43 @@
+# ── Build output ─────────────────────────────────────────────────────────────
+build/
+build-*/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+*_autogen/
+.qtc_clangd/
+*.user
+*.user.*
+
+# ── Qt / Android ─────────────────────────────────────────────────────────────
+android-build*/
+.gradle/
+local.properties
+*.apk
+*.aab
+*.so
+*.keystore
+!platform/android/**/*.xml
+
+# ── UI ───────────────────────────────────────────────────────────────────────
+node_modules/
+ui/dist/
+ui/dist-*/
+.vite/
+*.local
+
+# ── Native deps fetched at configure time ────────────────────────────────────
+third_party/libsodium/
+third_party/noise-c/
+
+# ── Runtime / local state ────────────────────────────────────────────────────
+*.db
+*.db-wal
+*.db-shm
+anytime-loopback/
+
+# ── Editor / OS ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
