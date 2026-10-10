@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The two colours the native side shares with the web UI. Both mirror
+    ui/src/theme/theme.ts and must change together with it:
+      brand_accent       colors.accent
+      splash_background  the light theme's page background (the at-bg variable)
+-->
+<resources>
+    <color name="brand_accent">#4453F6</color>
+    <color name="splash_background">#F7F7FA</color>
+</resources>

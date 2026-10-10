@@ -15,10 +15,27 @@
         switches to dark in Profile gets a light-on-dark status bar mismatch for
         now; fixing that needs a runtime call, not a static style.
     -->
-    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+    <style name="Base.AppTheme" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-        <item name="android:statusBarColor">#F7F7FA</item>
+        <item name="android:statusBarColor">@color/splash_background</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">#F7F7FA</item>
+        <!--
+            The launch splash, not a plain colour: this is what Android paints
+            the moment the icon is tapped, before the process has run a line of
+            our code. See drawable/splash.xml.
+
+            AnyTimeActivity swaps it for the plain background once the web UI is
+            up, so the logo cannot show through wherever the page does not
+            cover the window.
+
+            It is the light theme's background. Someone who chose dark in
+            Profile sees a light splash first — same cause as the status bar
+            note above: the choice lives in the page, out of a static style's
+            reach.
+        -->
+        <item name="android:windowBackground">@drawable/splash</item>
     </style>
+
+    <!-- Split from the base so values-v31 can add to it without repeating it. -->
+    <style name="AppTheme" parent="Base.AppTheme" />
 </resources>

@@ -15,6 +15,7 @@ import android.webkit.WebView;
 
 import androidx.core.content.FileProvider;
 
+import org.anytimechat.app.R;
 import org.qtproject.qt.android.bindings.QtActivity;
 
 import java.io.File;
@@ -196,6 +197,13 @@ public class AnyTimeActivity extends QtActivity {
                                                             WEBVIEW_RETRY_DELAY_MS);
             return;
         }
+
+        // The theme's window background is the launch splash (res/drawable/splash.xml),
+        // which is right for the first frame and wrong ever after: anywhere the page does
+        // not cover the window — a keyboard resizing it, say — the logo would show through.
+        // The WebView existing means Qt's own views now cover the window, so this swap is
+        // never seen.
+        getWindow().setBackgroundDrawableResource(R.color.splash_background);
 
         WebSettings settings = webView.getSettings();
         // Needed so the WebView can read the content:// URI the picker returns.

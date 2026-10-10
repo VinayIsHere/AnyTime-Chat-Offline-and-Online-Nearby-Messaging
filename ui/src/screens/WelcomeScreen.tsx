@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bluetooth, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { LogoTile } from '../components/Logo';
 import Screen from '../components/Screen';
 import { colors, motion, shadow } from '../theme/theme';
 
@@ -12,7 +13,7 @@ export default function WelcomeScreen() {
     <Screen>
       <div style={welcomeStyles.glow} />
       <div style={welcomeStyles.body}>
-        <div style={welcomeStyles.mark}><Bluetooth size={34} color={colors.white} strokeWidth={1.9} /></div>
+        <LogoTile size={76} style={welcomeStyles.mark} />
         <h1 style={welcomeStyles.title}>Chat with people<br />around you.</h1>
         <p style={welcomeStyles.sub}>Works with no internet. Pick a username, stay on Bluetooth, and start talking to people in range.</p>
 
@@ -37,7 +38,8 @@ const welcomeStyles: Record<string, React.CSSProperties> = {
   glow: { position: 'absolute', top: -140, left: '50%', transform: 'translateX(-50%)', width: 520, height: 520, borderRadius: '50%', background: colors.glow, pointerEvents: 'none' },
   // Scrolls on short screens instead of letting the CTA collide with the promises.
   body: { position: 'relative', flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 24px' },
-  mark: { marginTop: 'clamp(32px, 10vh, 96px)', width: 76, height: 76, borderRadius: 24, background: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadow.accentLg, flex: 'none' },
+  // Size, shape and colour come from LogoTile; this only places it.
+  mark: { marginTop: 'clamp(32px, 10vh, 96px)', boxShadow: shadow.accentLg },
   title: { margin: '28px 0 0', fontSize: 'clamp(30px, 9vw, 38px)', fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em', textWrap: 'pretty' },
   sub: { margin: '14px 0 0', fontSize: 15, fontWeight: 500, lineHeight: 1.55, color: colors.textMuted, maxWidth: 296 },
   promises: { marginTop: 34, display: 'flex', flexDirection: 'column', gap: 12 },

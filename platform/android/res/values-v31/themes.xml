@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Android 12+ draws its own launch screen — the app icon, centred — and
+        ignores a drawable windowBackground while doing so. Left alone it would
+        pick the backdrop itself; naming it keeps that screen on the same
+        background as the splash that follows it.
+    -->
+    <style name="AppTheme" parent="Base.AppTheme">
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    </style>
+</resources>

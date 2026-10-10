@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The LogoTile from src/components/Logo.tsx: accent tile, white mark at 62%. -->
+  <rect width="64" height="64" rx="18.56" fill="#4453F6"/>
+  <g transform="translate(12.16 12.16) scale(0.62)">
+    <path d="M20 8h24a12 12 0 0 1 12 12v18a12 12 0 0 1-12 12H24l-10 8v-9.2A12 12 0 0 1 8 38V20A12 12 0 0 1 20 8z" fill="#FFFFFF"/>
+    <circle cx="25" cy="35" r="3.6" fill="#4453F6"/>
+    <path d="M25 26a9 9 0 0 1 9 9M25 19a16 16 0 0 1 16 16" fill="none" stroke="#4453F6" stroke-width="4.2" stroke-linecap="round"/>
+  </g>
+</svg>

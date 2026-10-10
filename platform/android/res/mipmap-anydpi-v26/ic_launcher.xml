@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive icon: the launcher supplies the shape, we supply two layers.
+    There are deliberately no PNG fallbacks — those only serve API 25 and
+    below, and Qt 6.11 sets minSdk to 28.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/brand_accent" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

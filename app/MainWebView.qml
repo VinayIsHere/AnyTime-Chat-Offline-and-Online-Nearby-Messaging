@@ -17,6 +17,14 @@ Window {
     height: 844
     visible: true
     title: qsTr("AnyTime Chat")
+    // The page background (--at-bg, light). Without it the window is white for
+    // the frames between the launch splash lifting and the page painting.
+    color: "#F7F7FA"
+
+    // Tells C++ the launch splash can come down — see the splash block in
+    // main.cpp. A failed load counts: the splash must never be the last thing
+    // the user sees, whatever went wrong underneath it.
+    signal uiReady()
 
     WebView {
         id: webView
@@ -26,10 +34,21 @@ Window {
         onLoadingChanged: function (loadRequest) {
             // warn, not log: a UI that cannot load is a real failure, and debug
             // lines are compiled out of release builds.
-            if (loadRequest.status === WebView.LoadFailedStatus)
+            if (loadRequest.status === WebView.LoadFailedStatus) {
                 console.warn("[AnyTime] UI failed to load:", loadRequest.errorString)
-            else if (loadRequest.status === WebView.LoadSucceededStatus)
+                root.uiReady()
+            } else if (loadRequest.status === WebView.LoadSucceededStatus) {
                 console.log("[AnyTime] UI loaded")
+                root.uiReady()
+            }
         }
+    }
+
+    // The load signals above are the normal path. This is for the day neither
+    // arrives: a splash that never lifts looks exactly like a frozen app.
+    Timer {
+        interval: 8000
+        running: true
+        onTriggered: root.uiReady()
     }
 }

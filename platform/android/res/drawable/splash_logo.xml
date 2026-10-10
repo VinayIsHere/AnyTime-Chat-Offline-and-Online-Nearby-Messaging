@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The logo tile exactly as the web splash draws it (LogoTile at 104px in
+    ui/src/components/Logo.tsx): an accent square with a 29% corner radius and
+    the white mark at 62% of its size. 64 units x 1.0075 = 64.48dp, centred by
+    the 19.76 translation.
+
+    No drop shadow: a vector cannot blur. The web splash that takes over a
+    moment later has one, and it fades in with the rest of that screen.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="104dp"
+    android:height="104dp"
+    android:viewportWidth="104"
+    android:viewportHeight="104">
+    <path
+        android:fillColor="@color/brand_accent"
+        android:pathData="M30.16,0h43.68a30.16,30.16 0 0 1 30.16,30.16v43.68a30.16,30.16 0 0 1 -30.16,30.16h-43.68a30.16,30.16 0 0 1 -30.16,-30.16v-43.68a30.16,30.16 0 0 1 30.16,-30.16z" />
+    <group
+        android:scaleX="1.0075"
+        android:scaleY="1.0075"
+        android:translateX="19.76"
+        android:translateY="19.76">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M20,8h24a12,12 0 0 1 12,12v18a12,12 0 0 1 -12,12H24l-10,8v-9.2A12,12 0 0 1 8,38V20A12,12 0 0 1 20,8z" />
+        <path
+            android:fillColor="@color/brand_accent"
+            android:pathData="M21.4,35a3.6,3.6 0 1 0 7.2,0a3.6,3.6 0 1 0 -7.2,0z" />
+        <path
+            android:pathData="M25,26a9,9 0 0 1 9,9M25,19a16,16 0 0 1 16,16"
+            android:strokeColor="@color/brand_accent"
+            android:strokeLineCap="round"
+            android:strokeWidth="4.2" />
+    </group>
+</vector>

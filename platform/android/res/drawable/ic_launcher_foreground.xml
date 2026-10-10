@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Launcher icon foreground: the "Ping bubble" mark, white on the accent
+    background the adaptive icon supplies.
+
+    The geometry is ui/src/components/Logo.tsx verbatim — viewBox 0 0 64 64, the
+    BUBBLE and ARCS paths, the dot at (25,35) r=3.6 — so the icon and the mark
+    the app draws cannot drift apart. Change one, change the other.
+
+    An adaptive icon is a 108dp canvas of which launchers show the middle 72dp.
+    LogoTile draws the mark at 62% of its tile, so here it is 62% of 72dp:
+    64 units x 0.7 = 44.8dp, centred by the 31.6 translation.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.7"
+        android:scaleY="0.7"
+        android:translateX="31.6"
+        android:translateY="31.6">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M20,8h24a12,12 0 0 1 12,12v18a12,12 0 0 1 -12,12H24l-10,8v-9.2A12,12 0 0 1 8,38V20A12,12 0 0 1 20,8z" />
+        <!-- Vector drawables have no circle element; this is the dot as two arcs. -->
+        <path
+            android:fillColor="@color/brand_accent"
+            android:pathData="M21.4,35a3.6,3.6 0 1 0 7.2,0a3.6,3.6 0 1 0 -7.2,0z" />
+        <path
+            android:pathData="M25,26a9,9 0 0 1 9,9M25,19a16,16 0 0 1 16,16"
+            android:strokeColor="@color/brand_accent"
+            android:strokeLineCap="round"
+            android:strokeWidth="4.2" />
+    </group>
+</vector>

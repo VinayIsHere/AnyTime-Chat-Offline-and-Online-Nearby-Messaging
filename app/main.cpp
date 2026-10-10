@@ -19,6 +19,7 @@
 #ifdef ANYTIME_USE_WEBVIEW
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QTimer>
 #include <QtWebView>
 #endif
 
@@ -50,6 +51,13 @@
 using namespace anytime;
 
 namespace {
+
+#ifdef Q_OS_ANDROID
+/// How long the launch splash takes to fade once the web UI is up. Short: the
+/// web splash underneath shows the same logo in the same place, so this is a
+/// cross-fade between two near-identical frames, not a transition to watch.
+constexpr int kSplashFadeMillis = 200;
+#endif
 
 /// Per-instance data directory. `--instance b` gives a second, independent
 /// identity on the same machine, which is how two windows discover each other
@@ -338,6 +346,33 @@ int main(int argc, char* argv[])
 
     engine.loadFromModule("AnyTime", "MainWebView");
     AT_LOG_DEBUG("app", "WebView shell loading");
+
+#ifdef Q_OS_ANDROID
+    // ── Launch splash ────────────────────────────────────────────────────────
+    // The manifest marks Qt's splash "sticky", so it stays up until told
+    // otherwise — and this is where it is told, once MainWebView.qml reports the
+    // page has loaded. The web splash is on screen underneath by then, with the
+    // logo in the same place, so the fade reads as the logo coming to life
+    // rather than one screen replacing another.
+    //
+    // The timer is only an adaptor: a QML signal can be connected by name to a
+    // slot but not to a lambda, and QTimer::start() is a slot that already
+    // exists. Hiding twice is harmless, so the signal firing again on a later
+    // page load needs no guard.
+    QTimer splashLift;
+    splashLift.setSingleShot(true);
+    splashLift.setInterval(0);
+    QObject::connect(&splashLift, &QTimer::timeout, &app, [] {
+        AT_LOG_DEBUG("app", "launch splash lifted");
+        QNativeInterface::QAndroidApplication::hideSplashScreen(kSplashFadeMillis);
+    });
+    if (engine.rootObjects().isEmpty()) {
+        splashLift.start();  // no shell, so nothing will ever report ready
+    } else {
+        QObject::connect(engine.rootObjects().constFirst(), SIGNAL(uiReady()),
+                         &splashLift, SLOT(start()));
+    }
+#endif
 #else
     // Desktop: headless. Open the URL in a browser. Run a second copy with
     // --instance b and the two discover each other over loopback (AD-07).

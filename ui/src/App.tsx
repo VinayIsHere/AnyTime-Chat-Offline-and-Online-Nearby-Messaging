@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { ROUTER_BASENAME } from './api/base';
@@ -13,6 +13,7 @@ import NearbyScreen from './screens/NearbyScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import RequestsScreen from './screens/RequestsScreen';
 import SetupAccountScreen from './screens/SetupAccountScreen';
+import SplashScreen, { SPLASH_MIN_SHOW_MS } from './screens/SplashScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
 
 type Boot =
@@ -21,10 +22,38 @@ type Boot =
   | { phase: 'ready'; account: Account }
   | { phase: 'unreachable' };
 
+/**
+ * Whether this page load is the app being opened, rather than a route being
+ * loaded directly.
+ *
+ * The shell opens the app at the root. Everything else that loads a page lands
+ * deeper: tapping a notification makes AnyTimeActivity load `/chats/<id>`
+ * outright, and a developer reloads whatever screen they are on. Those must not
+ * sit behind a 1.4 s splash — someone tapping a message wants the message.
+ */
+function openedAtRoot(): boolean {
+  const path = window.location.pathname;
+  const route = ROUTER_BASENAME === '/' ? path : path.slice(ROUTER_BASENAME.length);
+  return route === '' || route === '/';
+}
+
 export default function App() {
   const [boot, setBoot] = useState<Boot>({ phase: 'loading' });
+  // Holds the splash for its minimum time on a real launch. Starts false on a
+  // deep link, where the splash only covers the account probe itself.
+  const [holdingSplash, setHoldingSplash] = useState(openedAtRoot);
 
   useEffect(() => {
+    if (!holdingSplash) return;
+    const t = window.setTimeout(() => setHoldingSplash(false), SPLASH_MIN_SHOW_MS);
+    return () => window.clearTimeout(t);
+  }, [holdingSplash]);
+
+  // A LAYOUT effect, so the theme's variables and keyframes exist before the
+  // first paint. As a plain effect the splash painted one frame without them —
+  // no rings, default text colour — right as it took over from the native
+  // launch splash, which is the one moment a flicker is most visible.
+  useLayoutEffect(() => {
     applyThemeMode(getThemeMode());
   }, []);
 
@@ -49,7 +78,7 @@ export default function App() {
     };
   }, []);
 
-  if (boot.phase === 'loading') return <Splash />;
+  if (boot.phase === 'loading' || holdingSplash) return <SplashScreen />;
   if (boot.phase === 'unreachable') return <CoreUnreachable />;
 
   const entry = boot.phase === 'ready' ? '/nearby' : '/welcome';
@@ -104,15 +133,6 @@ function RequireBluetooth({ children }: { children: ReactElement }) {
   return children;
 }
 
-/** Shown for the few hundred ms the account probe takes. */
-function Splash() {
-  return (
-    <div style={bootStyles.root}>
-      <div style={bootStyles.mark} />
-    </div>
-  );
-}
-
 /**
  * The core is not answering on loopback. In the shipped app this means the
  * C++ shell failed to start its server, which the user cannot fix — so the copy
@@ -147,13 +167,6 @@ const bootStyles: Record<string, React.CSSProperties> = {
     color: colors.text,
     fontFamily: font.family,
     padding: 28,
-  },
-  mark: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    background: colors.accent,
-    opacity: 0.9,
   },
   panel: { maxWidth: 320, textAlign: 'center' },
   title: { margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' },

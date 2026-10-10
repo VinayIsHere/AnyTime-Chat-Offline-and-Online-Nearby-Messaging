@@ -85,8 +85,9 @@
 
     <application
         android:name="org.qtproject.qt.android.bindings.QtApplication"
-        android:label="-- %%INSERT_APP_NAME%% --"
-        android:icon="-- %%INSERT_APP_ICON%% --"
+        android:label="AnyTime"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:hardwareAccelerated="true"
         android:allowBackup="false"
         android:fullBackupOnly="false"
@@ -115,7 +116,7 @@
         <activity
             android:name="com.anytimechat.AnyTimeActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
-            android:label="-- %%INSERT_APP_NAME%% --"
+            android:label="AnyTime"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
@@ -131,6 +132,25 @@
                 android:value="-- %%INSERT_APP_LIB_NAME%% --" />
             <meta-data android:name="android.app.arguments"
                 android:value="-- %%INSERT_APP_ARGUMENTS%% --" />
+
+            <!--
+                THE LAUNCH SPLASH, held until the web UI is actually on screen.
+
+                Qt lays this drawable over its own views. Left at the default
+                it is removed the moment Qt's first window EXISTS, which is
+                well before the WebView has loaded the page: the logo would
+                give way to a blank screen and then come back as the web
+                splash. "sticky" keeps it up until main.cpp calls
+                hideSplashScreen(), which it does when MainWebView.qml reports
+                the page loaded.
+
+                The same drawable is the theme's windowBackground, so the
+                system's launch frame and this one are the same picture.
+            -->
+            <meta-data android:name="android.app.splash_screen_drawable"
+                android:resource="@drawable/splash" />
+            <meta-data android:name="android.app.splash_screen_sticky"
+                android:value="true" />
         </activity>
 
         <!-- Holds the process open so the mesh survives the app being
