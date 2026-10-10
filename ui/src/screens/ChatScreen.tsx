@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MoreVertical, Send, Bluetooth, Check, ImagePlus, RotateCw, Ban } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Send, Bluetooth, Check, Clock, ImagePlus, RotateCw, Ban } from 'lucide-react';
 import Screen from '../components/Screen';
 import { colors, motion } from '../theme/theme';
 import { api, ApiError, type ChatSummary, type DeliveryStatus, type Message } from '../api/client';
@@ -18,7 +18,12 @@ export default function ChatScreen() {
   // core/domain/Enums.h (EnvelopeType). The indicator stays wired up but always
   // false, so adding `chat.typing` later is a one-line change here.
   const peerTyping = false;
-  const endRef = useRef<HTMLDivElement | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
+  // Whether the thread should follow its own bottom edge. Cleared only by the
+  // user dragging away from the bottom, so a programmatic smooth scroll that is
+  // still half way there does not count as "the user scrolled up".
+  const stickRef = useRef(true);
+  const touchingRef = useRef(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [attaching, setAttaching] = useState(false);
   const [attachError, setAttachError] = useState('');
@@ -34,6 +39,10 @@ export default function ChatScreen() {
   // Every createObjectURL pins its blob in memory until revoked. Leaving the
   // chat is where they stop being useful.
   useEffect(() => () => { Object.values(previewsRef.current).forEach(URL.revokeObjectURL); }, []);
+  // The compressed bytes of each photo the core has not stored yet, keyed the
+  // same way. This is what "Tap to retry" re-sends: without it a failed upload
+  // could only be dropped, and the user would have to pick the photo again.
+  const outgoingRef = useRef(new Map<string, Blob>());
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +74,30 @@ export default function ChatScreen() {
 
     return () => { cancelled = true; offRecv(); offStatus(); offSeen(); offLost(); };
   }, [chatId]);
-  useEffect(() => { endRef.current?.parentElement?.scrollTo({ top: 1e6, behavior: 'smooth' }); }, [messages, peerTyping]);
+  useEffect(() => {
+    stickRef.current = true;
+    threadRef.current?.scrollTo({ top: 1e6, behavior: 'smooth' });
+  }, [messages, peerTyping]);
+
+  function onThreadScroll() {
+    const el = threadRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (atBottom) stickRef.current = true;
+    else if (touchingRef.current) stickRef.current = false;
+  }
+
+  /**
+   * A photo has no height until it loads, so the scroll above runs while its
+   * bubble is still a sliver — and the picture then grows BELOW the visible
+   * area. Nothing scrolled again until the next list change, which for a photo
+   * you just sent is its "Sent"/"Delivered" receipt: the picture seemed to
+   * appear only once it had gone. Following the bottom again on load fixes that
+   * for sent, received and history photos alike.
+   */
+  function onPhotoLoaded() {
+    if (stickRef.current) threadRef.current?.scrollTo({ top: 1e6 });
+  }
 
   async function send() {
     const body = draft.trim();
@@ -103,7 +135,17 @@ export default function ChatScreen() {
 
     try {
       if (m.id.startsWith('tmp-')) {
-        const saved = await api.sendMessage(chatId, m.body, m.clientMessageId);
+        let saved: Message;
+        if (m.media) {
+          // Same bytes, same client id — the core treats a repeat as the same
+          // photo, so this is safe even if the first upload did land.
+          const image = outgoingRef.current.get(m.clientMessageId);
+          if (!image) throw new Error('photo-gone');
+          saved = await api.sendMedia(chatId, image, m.body, m.clientMessageId);
+          outgoingRef.current.delete(m.clientMessageId);
+        } else {
+          saved = await api.sendMessage(chatId, m.body, m.clientMessageId);
+        }
         setMessages((all) => all.map((x) => (x.id === m.id ? saved : x)));
       } else {
         await api.retryMessage(m.id);
@@ -141,46 +183,59 @@ export default function ChatScreen() {
 
     const clientMessageId = crypto.randomUUID();
     const caption = draft.trim();
-    let previewUrl = '';
+
+    // The bubble goes up BEFORE any work is done, straight from the picked
+    // file, the way WhatsApp does it. Compressing a camera photo takes a second
+    // or two and storing it a few more; the thread used to show nothing for
+    // all of that.
+    //
+    // It appears at "Sending", never "Sent": over BLE the bytes are going out
+    // for minutes afterwards, and an instant preview must not be allowed to
+    // imply the photo has arrived.
+    const previewUrl = URL.createObjectURL(file);
+    setPreviews((p) => ({ ...p, [clientMessageId]: previewUrl }));
+    setDraft('');
+    setMessages((all) => [...all, {
+      id: 'tmp-' + clientMessageId, chatId, clientMessageId,
+      body: caption, mine: true, at: 'now', status: 'queued',
+      media: { id: 'local-' + clientMessageId, mimeType: file.type || 'image/jpeg', bytes: file.size },
+    }]);
 
     try {
-      const image = await shrinkForSending(file);
-
-      // Show the photo the moment it is ready, from a local blob URL, the way
-      // WhatsApp does. Storing and encrypting it takes 3-5 seconds on a phone,
-      // and until now the thread showed nothing at all for that whole stretch.
-      //
-      // The bubble still appears at "Queued", never "Sent": over BLE the bytes
-      // are going out for minutes afterwards, and an instant preview must not
-      // be allowed to imply the photo has arrived.
-      previewUrl = URL.createObjectURL(image);
-      setPreviews((p) => ({ ...p, [clientMessageId]: previewUrl }));
-      setDraft('');
-      setMessages((all) => [...all, {
-        id: 'tmp-' + clientMessageId, chatId, clientMessageId,
-        body: caption, mine: true, at: 'now', status: 'queued',
-        media: { id: 'local-' + clientMessageId, mimeType: image.type || 'image/jpeg', bytes: image.size },
-      }]);
-
-      const saved = await api.sendMedia(chatId, image, caption, clientMessageId);
-      // Matched on clientMessageId, not the temporary id: the preview stays
-      // keyed to the same photo once the core hands back the real row.
-      setMessages((all) => all.map((x) => (x.clientMessageId === clientMessageId ? saved : x)));
-    } catch (e) {
-      // The core never stored this one, so there is no row to leave behind —
-      // drop the bubble rather than stranding a photo that does not exist, and
-      // hand the caption back so it is not lost with it.
-      if (previewUrl) {
+      let image: Blob;
+      try {
+        image = await shrinkForSending(file);
+      } catch (e) {
+        // Nothing sendable exists, so there is nothing a retry could send:
+        // take the bubble back down and hand the caption back.
         URL.revokeObjectURL(previewUrl);
         setPreviews((p) => { const next = { ...p }; delete next[clientMessageId]; return next; });
+        setMessages((all) => all.filter((x) => x.clientMessageId !== clientMessageId));
+        if (caption) setDraft(caption);
+        setAttachError(
+          e instanceof Error && e.message === 'too-large'
+            ? 'That image is too detailed to send over Bluetooth. Try a smaller one.'
+            : 'Could not read that image.',
+        );
+        return;
       }
-      setMessages((all) => all.filter((x) => x.clientMessageId !== clientMessageId));
-      if (caption) setDraft(caption);
-      setAttachError(
-        e instanceof Error && e.message === 'too-large'
-          ? 'That image is too detailed to send over Bluetooth. Try a smaller one.'
-          : 'Could not send that image.',
-      );
+
+      outgoingRef.current.set(clientMessageId, image);
+      try {
+        const saved = await api.sendMedia(chatId, image, caption, clientMessageId);
+        outgoingRef.current.delete(clientMessageId); // stored: a retry now goes by id
+        // Matched on clientMessageId, not the temporary id: the preview stays
+        // keyed to the same photo once the core hands back the real row.
+        setMessages((all) => all.map((x) => (x.clientMessageId === clientMessageId ? saved : x)));
+      } catch (e) {
+        // The photo stays where it is, marked "Not sent · Tap to retry". It
+        // used to vanish here, which looked like the app had lost it.
+        setMessages((all) =>
+          all.map((x) => (x.clientMessageId === clientMessageId ? { ...x, status: 'failed' } : x)));
+        if (e instanceof ApiError && e.status === 403) {
+          setAttachError('You blocked this person, so messages cannot be sent.');
+        }
+      }
     } finally {
       setAttaching(false);
       if (fileRef.current) fileRef.current.value = ''; // so the same file can be picked again
@@ -229,14 +284,28 @@ export default function ChatScreen() {
         )}
       </div>
 
-      <div style={chatStyles.thread}>
+      <div
+        ref={threadRef}
+        style={chatStyles.thread}
+        onScroll={onThreadScroll}
+        onTouchStart={() => { touchingRef.current = true; }}
+        onTouchEnd={() => { touchingRef.current = false; }}
+        onTouchCancel={() => { touchingRef.current = false; }}
+        onWheel={(e) => { if (e.deltaY < 0) stickRef.current = false; }}
+      >
         <span style={chatStyles.pill}>
           {chat?.reachable
             ? 'CONNECTED OVER BLUETOOTH · NO INTERNET'
             : 'OUT OF RANGE · MESSAGES WILL QUEUE'}
         </span>
         {messages.map((m) => (
-          <div key={m.id} style={m.mine ? chatStyles.mineWrap : chatStyles.theirsWrap}>
+          // Keyed on the client id for our own messages: it is the one id that
+          // survives the swap from the optimistic row to the stored one, so the
+          // bubble is not torn down and its photo reloaded at that moment.
+          <div
+            key={m.mine && m.clientMessageId ? 'mine-' + m.clientMessageId : m.id}
+            style={m.mine ? chatStyles.mineWrap : chatStyles.theirsWrap}
+          >
             {m.media ? (
               <div style={m.mine ? chatStyles.mine : chatStyles.theirs}>
                 {/* A local blob URL while the photo is still on its way out,
@@ -247,6 +316,7 @@ export default function ChatScreen() {
                 <img
                   src={previews[m.clientMessageId] ?? api.mediaUrl(m.media.id)}
                   alt={m.body || 'Photo'}
+                  onLoad={onPhotoLoaded}
                   style={{ ...chatStyles.image, opacity: m.status === 'queued' ? 0.65 : 1 }}
                 />
                 {m.body && <div style={chatStyles.caption}>{m.body}</div>}
@@ -258,12 +328,13 @@ export default function ChatScreen() {
               // The only receipt that asks for something, so it is a button:
               // "Not sent" with no way forward was a dead end.
               <button style={chatStyles.retry} onClick={() => retry(m)} aria-label="Retry sending">
-                {m.at} · {receiptLabel(m.status)} · Tap to retry
+                {m.at} · {receiptLabel(m.status, !!chat?.reachable)} · Tap to retry
                 <RotateCw size={12} strokeWidth={2.4} />
               </button>
             ) : m.mine && (
               <span style={chatStyles.receipt}>
-                {m.at} · {receiptLabel(m.status)}
+                {m.at} · {receiptLabel(m.status, !!chat?.reachable)}
+                {m.status === 'queued' && <Clock size={12} strokeWidth={2.4} aria-label="Not sent yet" />}
                 {m.status === 'delivered' && <Check size={13} strokeWidth={2.4} color={colors.success} />}
               </span>
             )}
@@ -274,7 +345,6 @@ export default function ChatScreen() {
             {[0, 0.2, 0.4].map((d) => <span key={d} style={{ ...chatStyles.typingDot, animationDelay: d + 's' }} />)}
           </div>
         )}
-        <div ref={endRef} />
       </div>
 
       {attachError && <div style={chatStyles.attachError}>{attachError}</div>}
@@ -332,10 +402,13 @@ export default function ChatScreen() {
  *
  * 'failed' used to fall through to "Sent", which told the user the exact
  * opposite of what had happened to their message.
+ *
+ * 'queued' reads "Sending" only while the peer is in range. Out of range the
+ * message is genuinely waiting, and "Sending" for an hour would be a lie.
  */
-function receiptLabel(status: DeliveryStatus): string {
+function receiptLabel(status: DeliveryStatus, reachable: boolean): string {
   switch (status) {
-    case 'queued':    return 'Queued';
+    case 'queued':    return reachable ? 'Sending' : 'Queued';
     case 'delivered': return 'Delivered';
     case 'read':      return 'Read';
     case 'failed':    return 'Not sent';

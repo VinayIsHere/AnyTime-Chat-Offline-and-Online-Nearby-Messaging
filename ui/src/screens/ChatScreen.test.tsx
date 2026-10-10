@@ -1,8 +1,8 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, type ChatSummary, type Message } from '../api/client';
+import { ApiError, type ChatSummary, type MediaRef, type Message } from '../api/client';
 import { createEventBus, renderAt } from '../test/harness';
 
 const bus = vi.hoisted(() => ({ current: null as null | ReturnType<typeof createEventBus> }));
@@ -70,7 +70,7 @@ describe('ChatScreen — resending a failed message', () => {
     expect(retries[0]).toHaveTextContent('Not sent · Tap to retry');
   });
 
-  it('resends a stored failed message by id and shows it queued again', async () => {
+  it('resends a stored failed message by id and shows it sending again', async () => {
     mocked.retryMessage.mockResolvedValue(undefined);
     openChat(CHAT, [message({ id: 'bad', status: 'failed' })]);
 
@@ -78,7 +78,7 @@ describe('ChatScreen — resending a failed message', () => {
 
     expect(mocked.retryMessage).toHaveBeenCalledWith('bad');
     expect(mocked.sendMessage).not.toHaveBeenCalled();
-    expect(await screen.findByText(/Queued/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sending/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Retry sending' })).not.toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('ChatScreen — resending a failed message', () => {
     await waitFor(() => expect(mocked.sendMessage).toHaveBeenCalledTimes(2));
     expect(mocked.sendMessage.mock.calls[1]).toEqual(['chat1', 'are you there', firstClientId]);
     expect(mocked.retryMessage).not.toHaveBeenCalled();
-    expect(await screen.findByText(/Queued/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sending/)).toBeInTheDocument();
   });
 
   it('puts the message back to failed and says why when the resend is refused', async () => {
@@ -182,5 +182,129 @@ describe('ChatScreen — blocking a contact', () => {
 
     expect(await screen.findByText('Could not block this person.')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Message')).toBeInTheDocument();
+  });
+});
+
+describe('ChatScreen — sending a photo', () => {
+  const photo = new File(['raw-camera-bytes'], 'photo.jpg', { type: 'image/jpeg' });
+  const MEDIA: MediaRef = { id: 'media_1', mimeType: 'image/jpeg', bytes: 5 };
+
+  let getContext: { mockRestore(): void };
+  let toBlob: { mockRestore(): void };
+
+  // jsdom can neither decode an image nor draw one, so the three browser calls
+  // shrinkForSending makes are stood in for. What is under test is the thread.
+  beforeEach(() => {
+    mocked.sendMedia.mockReset();
+    mocked.retryMessage.mockReset();
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => ({ width: 400, height: 300, close: () => {} })));
+    getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+      .mockReturnValue({ drawImage: () => {} } as never);
+    toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob')
+      .mockImplementation((done: BlobCallback) => done(new Blob(['small'], { type: 'image/jpeg' })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    getContext.mockRestore();
+    toBlob.mockRestore();
+  });
+
+  async function attach(container: HTMLElement) {
+    await screen.findByPlaceholderText('Message');
+    await userEvent.upload(container.querySelector<HTMLInputElement>('input[type="file"]')!, photo);
+  }
+
+  it('shows the photo at once, as sending, before the upload has finished', async () => {
+    let finish!: (m: Message) => void;
+    mocked.sendMedia.mockReturnValue(new Promise<Message>((resolve) => { finish = resolve; }));
+    const { container } = openChat();
+
+    await attach(container);
+
+    // In the thread while the core is still busy with it.
+    const preview = await screen.findByAltText('Photo');
+    expect(preview).toHaveAttribute('src', 'blob:test');
+    expect(screen.getByText(/Sending/)).toBeInTheDocument();
+    expect(screen.queryByText(/Delivered/)).not.toBeInTheDocument();
+
+    // What goes to the core is the compressed copy, never the camera original.
+    await waitFor(() => expect(mocked.sendMedia).toHaveBeenCalledTimes(1));
+    const [, sent, , clientMessageId] = mocked.sendMedia.mock.calls[0];
+    expect(sent).not.toBe(photo);
+    expect(sent.size).toBe(5);
+
+    finish(message({ id: 'stored', clientMessageId, body: '', status: 'sent', media: MEDIA }));
+
+    // Same bubble, same picture — only the receipt moves on.
+    expect(await screen.findByText(/Sent/)).toBeInTheDocument();
+    expect(screen.getByAltText('Photo')).toHaveAttribute('src', 'blob:test');
+
+    bus.current!.emit('message.status', { id: 'stored', status: 'delivered' });
+    expect(await screen.findByText(/Delivered/)).toBeInTheDocument();
+  });
+
+  it('keeps a photo whose upload failed, and retry resends the same bytes', async () => {
+    mocked.sendMedia
+      .mockRejectedValueOnce(new ApiError(0, 'unreachable', 'down'))
+      .mockImplementationOnce(async (_chat, _image, caption, clientMessageId) =>
+        message({ id: 'stored', clientMessageId, body: caption, status: 'queued', media: MEDIA }));
+    const { container } = openChat();
+
+    await attach(container);
+
+    const retry = await screen.findByRole('button', { name: 'Retry sending' });
+    expect(retry).toHaveTextContent('Not sent · Tap to retry');
+    expect(screen.getByAltText('Photo')).toBeInTheDocument();
+
+    await userEvent.click(retry);
+
+    await waitFor(() => expect(mocked.sendMedia).toHaveBeenCalledTimes(2));
+    const [first, second] = mocked.sendMedia.mock.calls;
+    expect(second[1]).toBe(first[1]);   // the same compressed photo
+    expect(second[3]).toBe(first[3]);   // under the same client id
+    expect(mocked.retryMessage).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Sending/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retry sending' })).not.toBeInTheDocument();
+    expect(screen.getByAltText('Photo')).toBeInTheDocument();
+  });
+
+  it('takes the bubble back down when the file cannot be read as an image', async () => {
+    vi.stubGlobal('createImageBitmap', vi.fn(async () => { throw new Error('not an image'); }));
+    const { container } = openChat();
+
+    await attach(container);
+
+    expect(await screen.findByText('Could not read that image.')).toBeInTheDocument();
+    expect(screen.queryByAltText('Photo')).not.toBeInTheDocument();
+    expect(mocked.sendMedia).not.toHaveBeenCalled();
+  });
+
+  it('follows the bottom of the thread again once a photo has loaded', async () => {
+    const scrollTo = vi.spyOn(Element.prototype, 'scrollTo');
+    openChat(CHAT, [
+      message({ id: 'p', clientMessageId: 'x', mine: false, body: '', status: 'delivered', media: MEDIA }),
+    ]);
+
+    const img = await screen.findByAltText('Photo');
+    scrollTo.mockClear();
+    fireEvent.load(img);
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1e6 });
+    scrollTo.mockRestore();
+  });
+});
+
+describe('ChatScreen — the receipt on a message that has not gone yet', () => {
+  it('says sending while the peer is in range', async () => {
+    openChat(CHAT, [message({ status: 'queued' })]);
+    expect(await screen.findByText(/Sending/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Not sent yet')).toBeInTheDocument();
+  });
+
+  it('says queued, not sending, while the peer is out of range', async () => {
+    openChat({ ...CHAT, reachable: false }, [message({ status: 'queued' })]);
+    expect(await screen.findByText(/Queued/)).toBeInTheDocument();
+    expect(screen.queryByText(/Sending/)).not.toBeInTheDocument();
   });
 });
