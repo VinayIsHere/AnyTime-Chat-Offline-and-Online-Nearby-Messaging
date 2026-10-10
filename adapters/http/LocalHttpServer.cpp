@@ -19,6 +19,10 @@
 #include "adapters/http/SseHub.h"
 #include "core/AppCore.h"
 #include "core/domain/Types.h"
+#include "core/log/Log.h"
+
+// Nothing in this file logs a request path before the prefix is stripped, or the
+// token itself: the token IS the credential, and a log file is easy to share.
 
 namespace anytime::http {
 
@@ -107,10 +111,11 @@ bool LocalHttpServer::start()
     // 127.0.0.1 only. Never QHostAddress::Any — that would put the whole chat
     // history on the local network.
     if (!impl_->server.listen(QHostAddress::LocalHost, impl_->config.port)) {
-        qWarning("[AnyTime] local API failed to bind: %s",
-                 qPrintable(impl_->server.errorString()));
+        AT_LOG_ERROR("http", "local API failed to bind: {}",
+                     impl_->server.errorString().toStdString());
         return false;
     }
+    AT_LOG_INFO("http", "local API listening on 127.0.0.1:{}", impl_->server.serverPort());
     return true;
 }
 
@@ -127,6 +132,8 @@ void LocalHttpServer::Impl::onNewConnection()
         // Defence in depth: refuse anything that is not loopback, in case a
         // future change ever widens the bind address.
         if (config.requireLoopbackPeer && !socket->peerAddress().isLoopback()) {
+            AT_LOG_WARN("http", "refused a connection from non-loopback address {}",
+                        socket->peerAddress().toString().toStdString());
             socket->abort();
             socket->deleteLater();
             continue;
@@ -152,6 +159,7 @@ void LocalHttpServer::Impl::handleBuffer(QTcpSocket* socket)
 
     if (state == ParseState::NeedMoreData) return;
     if (state == ParseState::Malformed) {
+        AT_LOG_WARN("http", "malformed request ({} bytes)", buffer.size());
         respond(socket, Response::error(400, "invalid_argument", QStringLiteral("Malformed request.")));
         return;
     }
@@ -160,6 +168,8 @@ void LocalHttpServer::Impl::handleBuffer(QTcpSocket* socket)
     // Anything without it gets a bare 404 — no hint that a server is here at all.
     QString path = request.path;
     if (!stripPrefix(path)) {
+        // Path deliberately not logged — see the note at the top of the file.
+        AT_LOG_DEBUG("http", "request without the API prefix refused");
         respond(socket, Response{404, "text/plain", "Not Found", false});
         return;
     }
@@ -167,6 +177,8 @@ void LocalHttpServer::Impl::handleBuffer(QTcpSocket* socket)
 
     // ── Gate 2: Host / Origin, against DNS rebinding ────────────────────────
     if (!originAllowed(request)) {
+        AT_LOG_WARN("http", "rejected foreign Host/Origin (host '{}', origin '{}')",
+                    request.header("host").toStdString(), request.header("origin").toStdString());
         respond(socket, Response::error(403, "permission_denied", QStringLiteral("Rejected origin.")));
         return;
     }
@@ -184,6 +196,16 @@ void LocalHttpServer::Impl::handleBuffer(QTcpSocket* socket)
         apiRequest.path = path.mid(4);  // strip "api/"
 
         if (auto response = router.dispatch(apiRequest)) {
+            // Path is safe to log here: the secret prefix is already stripped.
+            if (response->status >= 500) {
+                AT_LOG_ERROR("http", "{} api/{} -> {}",
+                             methodName(apiRequest.method).toStdString(),
+                             apiRequest.path.toStdString(), response->status);
+            } else if (response->status >= 400) {
+                AT_LOG_DEBUG("http", "{} api/{} -> {}",
+                             methodName(apiRequest.method).toStdString(),
+                             apiRequest.path.toStdString(), response->status);
+            }
             respond(socket, *response);
             return;
         }

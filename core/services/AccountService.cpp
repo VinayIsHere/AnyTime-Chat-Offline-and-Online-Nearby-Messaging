@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cctype>
 
+#include "core/log/Log.h"
 #include "core/ports/IClock.h"
 #include "core/ports/IIdentityStore.h"
 #include "core/ports/IRepositories.h"
@@ -121,7 +122,10 @@ Outcome<Account> AccountService::create(const CreateAccountRequest& request)
     // Account creation IS identity creation (AD-05): this generates the keypair
     // from which the PeerId, and therefore the handle, is derived.
     auto identity = identity_.loadOrCreate();
-    if (identity.isError()) return identity.result();
+    if (identity.isError()) {
+        AT_LOG_ERROR("account", "could not create an identity: {}", identity.result().message());
+        return identity.result();
+    }
 
     Account account;
     account.peerId           = identity.value().peerId;
@@ -134,7 +138,11 @@ Outcome<Account> AccountService::create(const CreateAccountRequest& request)
     account.acceptFrom       = AcceptFrom::Everyone;
     account.createdAt        = now;
 
-    if (const Result saved = accounts_.save(account); saved.isError()) return saved;
+    if (const Result saved = accounts_.save(account); saved.isError()) {
+        AT_LOG_ERROR("account", "could not save the new account: {}", saved.message());
+        return saved;
+    }
+    AT_LOG_INFO("account", "account created for peer {}", account.peerId.toHex());
     return account;
 }
 
@@ -158,13 +166,35 @@ Outcome<Account> AccountService::update(const UpdateAccountRequest& request)
     if (request.discoverable) account.discoverable = *request.discoverable;
     if (request.acceptFrom)   account.acceptFrom = *request.acceptFrom;
 
-    if (const Result saved = accounts_.save(account); saved.isError()) return saved;
+    if (const Result saved = accounts_.save(account); saved.isError()) {
+        AT_LOG_ERROR("account", "could not save account changes: {}", saved.message());
+        return saved;
+    }
+    AT_LOG_INFO("account", "account updated (discoverable: {})", account.discoverable);
     return account;
 }
 
+/// TODO(panic-wipe): this clears the account row and the identity key ONLY.
+///
+/// Every message, chat, contact and outbox row stays in the database, and the
+/// at-rest data key that decrypts them stays on disk beside it — so "wipe" today
+/// gives a user who triggers it a false assurance, which is worse than not
+/// offering it. docs/ARCHITECTURE.md section 10 promises both are cleared.
+///
+/// The missing pieces already exist and are tested: SqliteStore::wipeAll() and
+/// MonocypherDataCipher::wipe(). Finishing this means injecting both here,
+/// adding a route, and adding the confirm UI. Deleting the data key alone is the
+/// strongest single step — it makes every encrypted row permanently unreadable
+/// without having to overwrite anything.
+///
+/// Deliberately left unwired for now: there is no UI to trigger it yet.
 Result AccountService::wipe()
 {
-    if (const Result r = accounts_.clear(); r.isError()) return r;
+    AT_LOG_WARN("account", "wiping account and identity");
+    if (const Result r = accounts_.clear(); r.isError()) {
+        AT_LOG_ERROR("account", "could not clear the account: {}", r.message());
+        return r;
+    }
     return identity_.wipe();
 }
 

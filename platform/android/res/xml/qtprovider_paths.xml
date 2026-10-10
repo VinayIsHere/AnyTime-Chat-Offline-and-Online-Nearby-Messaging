@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Required by the FileProvider Qt's manifest template declares. Nothing in
+    AnyTime shares files yet — v1 is text only — but packaging fails if the
+    provider has no paths resource, so the minimum is declared here.
+-->
+<paths>
+    <cache-path name="cache" path="." />
+</paths>

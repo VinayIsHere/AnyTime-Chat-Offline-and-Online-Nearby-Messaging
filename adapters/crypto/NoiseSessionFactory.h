@@ -1,20 +1,14 @@
 // adapters/crypto/NoiseSessionFactory.h
 //
-// ISecureSession over noise-c (MIT) with a libsodium backend — AD-06.
+// ISecureSession over Noise_XX_25519_ChaChaPoly_BLAKE2b (AD-06).
 //
-// Pattern: Noise_XX_25519_ChaChaPoly_SHA256
-//   · XX gives mutual authentication and forward secrecy
-//   · neither side needs the other's static key in advance, which is exactly
-//     right for meeting a stranger over BLE
-//   · the peer's authenticated static key falls out of the handshake, and that
-//     is the value pinned onto a Contact at accept time (§08)
+// Primitives come from vendored Monocypher; the handshake state machine is in
+// NoiseProtocol.h. Replaces NullSessionFactory, which failed every call rather
+// than pretending to encrypt.
 //
-// WE ARE NOT DESIGNING CRYPTO HERE. This is a specified protocol implemented
-// with vetted primitives. VALIDATE AGAINST THE PUBLISHED NOISE TEST VECTORS
-// before trusting it — that test is the whole reason this choice is safe.
-//
-// Swapping noise-c for a focused in-house XX implementation later touches only
-// this file, because everything above depends on ISecureSession.
+// The local static secret never reaches this class. Noise needs DH against our
+// static key twice during XX, and both go back through IIdentityStore::agree(),
+// so the identity store keeps sole custody of the secret.
 
 #pragma once
 
@@ -33,15 +27,17 @@ public:
     explicit NoiseSessionFactory(IIdentityStore&);
     ~NoiseSessionFactory() override;
 
-    /// Initialises libsodium. Call once, before any session is created.
-    static Result initialiseLibrary();
+    /// `remoteStatic` is ignored: XX learns the peer's static key in-band, which
+    /// is the whole reason it suits meeting a stranger. A caller that already
+    /// knows the key should still verify the pinned value after the handshake.
+    Outcome<std::unique_ptr<ISecureSession>> createSession(const PublicKey* remoteStatic) override;
 
-    Outcome<std::unique_ptr<ISecureSession>> createSession(
-        const PublicKey* remoteStatic) override;
+    /// XX message 1 is `-> e` with an empty payload and no key yet, so it is
+    /// exactly one 32-byte ephemeral key. Messages 2 (96) and 3 (64) are longer.
+    bool isHandshakeInitiation(ByteSpan message) const override;
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
+    IIdentityStore& identity_;
 };
 
 }  // namespace anytime::crypto

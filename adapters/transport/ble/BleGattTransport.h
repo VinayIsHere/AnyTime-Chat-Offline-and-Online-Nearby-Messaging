@@ -22,7 +22,9 @@
 
 #pragma once
 
+#include <QHash>
 #include <QObject>
+#include <QString>
 
 #include <memory>
 
@@ -34,10 +36,11 @@ struct BleConfig {
     /// Must match protocol::kServiceUuid.
     QString serviceUuid;
 
-    /// Conservative and fixed. We never query MTU (§11): Qt and Android report
-    /// it unreliably with several centrals connected, and being wrong means
-    /// silent truncation. Text does not need the throughput.
-    quint32 frameSize = 180;
+    /// How big a protocol frame may be. Still never derived from a negotiated
+    /// MTU (§11) — that is reported unreliably with several centrals connected.
+    /// main.cpp sets this from protocol::kFragmentPayloadBytes; see that constant
+    /// for why 480 fits inside one 512-octet ATT write.
+    quint32 frameSize = 480;
 
     /// Android caps advertising at 29 usable bytes, which holds the service UUID
     /// and the 8-byte peer id and nothing else. Nickname and public keys travel
@@ -71,15 +74,28 @@ public:
 
     void setListener(ITransportListener*) override;
 
-    // ── called from JNI, on binder threads ───────────────────────────────────
-    // These enqueue and return immediately. They never touch core state.
-    void enqueuePeerSeen(const PeerId&, const QString& address, int rssi);
-    void enqueueLinkUp(LinkId, const PeerId&);
-    void enqueueLinkDown(LinkId, LinkCloseReason);
-    void enqueueFrame(LinkId, const QByteArray&);
-    void enqueueRadioState(bool available);
+    // ── invoked on the CORE thread ───────────────────────────────────────────
+    //
+    // The JNI callbacks run on binder threads and do nothing but marshal their
+    // arguments and post to these via a queued invocation. Calling them directly
+    // from a binder thread defeats the entire point — see the .cpp header
+    // comment for what that costs.
+    void deliverPeerSeen(const PeerId&, const QString& address, int rssi);
+    void deliverLinkUp(LinkId, const PeerId&);
+    void deliverLinkDown(LinkId, int reason);
+    void deliverFrame(LinkId, const QByteArray&);
+    void deliverRadioState(bool available);
 
 private:
+    /// Binds the five Java native methods to their C++ entry points, once per
+    /// process. Must run before BleRadio is constructed.
+    static bool registerNatives();
+
+    /// True when every Bluetooth permission is already granted. Otherwise it
+    /// prompts (the first time only) and returns false — AppCore retries start()
+    /// on a timer rather than blocking on the dialog.
+    static bool ensurePermissions();
+
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

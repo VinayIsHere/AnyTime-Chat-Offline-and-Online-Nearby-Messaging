@@ -13,6 +13,7 @@
 
 #include "adapters/http/JsonMapping.h"
 #include "core/domain/Types.h"
+#include "core/log/Log.h"
 
 namespace anytime::http {
 
@@ -55,11 +56,13 @@ void SseHub::attachClient(QTcpSocket* socket)
     socket->flush();
 
     impl_->clients.push_back(socket);
+    AT_LOG_DEBUG("sse", "event stream opened ({} open)", impl_->clients.size());
 
     connect(socket, &QTcpSocket::disconnected, this, [this, socket] {
         auto& c = impl_->clients;
         c.erase(std::remove(c.begin(), c.end(), socket), c.end());
         socket->deleteLater();
+        AT_LOG_DEBUG("sse", "event stream closed ({} open)", c.size());
         if (c.empty()) impl_->heartbeat.stop();
     });
 
@@ -98,7 +101,16 @@ void SseHub::broadcast(EventType type, const QJsonObject& payload)
 
 void SseHub::onPeerDiscovered(const Peer& peer)
 {
-    broadcast(EventType::PeerDiscovered, json::peerToJson(peer));
+    // A SIGHTING, not a status. This adapter has no access to the request gate,
+    // and reaching for it from here would invert the layering — so the status
+    // fields go out neutral and the Nearby screen refetches on this event rather
+    // than trusting them.
+    //
+    // Merging them in would be worse than useless: an already-accepted contact
+    // coming back into range would be re-announced as a stranger, and the screen
+    // would overwrite a correct row with a wrong one.
+    broadcast(EventType::PeerDiscovered,
+              json::peerToJson(peer, PeerStatus::None, true, QString()));
 }
 
 void SseHub::onPeerLost(const PeerId& peerId)
@@ -117,14 +129,20 @@ void SseHub::onRequestAccepted(const anytime::Request& request, const Chat& chat
 {
     QJsonObject o;
     o.insert(QStringLiteral("request"), json::requestToJson(request));
-    o.insert(QStringLiteral("chat"), json::chatToJson(chat, QString()));
+    // The nickname travels on the request, so the handle can be built here
+    // without this adapter reaching for a repository it deliberately cannot see.
+    o.insert(QStringLiteral("chat"),
+             json::chatToJson(chat, json::handleFor(request.nickname, chat.peerId)));
     broadcast(EventType::RequestAccepted, o);
 }
 
-void SseHub::onRequestDeclined(const RequestId& id)
+void SseHub::onRequestDeclined(const RequestId& id, const PeerId& peerId)
 {
     QJsonObject o;
     o.insert(QStringLiteral("id"), QString::fromStdString(id.value()));
+    // The Nearby screen keys on peers, not request ids. Without this it could
+    // not tell which peer to offer again and would have to refetch the list.
+    o.insert(QStringLiteral("peerId"), QString::fromStdString(peerId.toHex()));
     broadcast(EventType::RequestDeclined, o);
 }
 

@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "core/domain/Entities.h"
@@ -33,7 +34,7 @@ class DiscoveryService;
 class DeliveryService {
 public:
     DeliveryService(MeshEngine&, DiscoveryService&, IOutbox&, IMessageRepository&,
-                    IEventSink&, IClock&);
+                    protocol::ICborCodec&, IEventSink&, IClock&);
     ~DeliveryService();
 
     void start();
@@ -41,7 +42,12 @@ public:
 
     /// Queues an envelope for a peer and attempts an immediate send. The message
     /// row is already stored by ChatService; this owns only its delivery.
-    Result enqueue(const MessageId&, const PeerId&, const protocol::AppEnvelope&);
+    ///
+    /// `payloadClass` travels with the entry so RoutingPolicy can pick a bulk
+    /// transport for an image and a cheap one for a line of text. It is stored,
+    /// not inferred — see OutboxEntry::payloadClass.
+    Result enqueue(const MessageId&, const PeerId&, const protocol::AppEnvelope&,
+                   PayloadClass);
 
     /// Called by DiscoveryService when a peer re-enters the reachability window.
     void onPeerReachable(const PeerId&);
@@ -63,16 +69,23 @@ private:
     void tick();
 
     void drainPeer(const PeerId&);
+    void attemptSend(const OutboxEntry&);
     void setStatus(const MessageId&, DeliveryStatus);
 
     static Timestamp backoffFor(int attempt);
 
-    MeshEngine&         mesh_;
-    DiscoveryService&   discovery_;
-    IOutbox&            outbox_;
-    IMessageRepository& messages_;
-    IEventSink&         events_;
-    IClock&             clock_;
+    // There is deliberately NO in-memory envelope map here. The encoded envelope
+    // lives in OutboxEntry::payload, which SqliteStore stores encrypted at rest,
+    // so a message queued before the app was killed still goes out afterwards.
+    // Holding a RAM copy as well would only give the two a chance to diverge.
+
+    MeshEngine&           mesh_;
+    DiscoveryService&     discovery_;
+    IOutbox&              outbox_;
+    IMessageRepository&   messages_;
+    protocol::ICborCodec& cbor_;
+    IEventSink&           events_;
+    IClock&               clock_;
 
     TimerId tickTimer_ = kInvalidTimer;
     bool    running_   = false;

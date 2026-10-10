@@ -1,3 +1,11 @@
+// Bundled font files — the app has no guaranteed internet, so no Google Fonts.
+// Latin subset only, and only the weights theme.ts actually uses.
+import '@fontsource/manrope/latin-400.css';
+import '@fontsource/manrope/latin-500.css';
+import '@fontsource/manrope/latin-600.css';
+import '@fontsource/manrope/latin-700.css';
+import '@fontsource/manrope/latin-800.css';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 

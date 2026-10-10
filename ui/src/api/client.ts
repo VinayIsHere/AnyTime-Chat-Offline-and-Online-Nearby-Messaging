@@ -33,11 +33,27 @@ export interface Account {
 
 export type SignalBand = 'very strong' | 'strong' | 'weak' | 'unknown';
 
+/**
+ * Where we stand with a peer, derived server-side from the contact list and the
+ * newest outgoing request. Survives navigating away and restarting the app,
+ * which component state could not.
+ */
+export type PeerStatus = 'none' | 'requested' | 'declined' | 'contact';
+
 export interface NearbyPeer {
   peerId: string;
   nickname: string;
   handle: string;
   signal: SignalBand;
+  status: PeerStatus;
+  /**
+   * Whether the button is actionable. Separate from `status` on purpose: an
+   * unanswered request stays `requested` — so the UI keeps saying it was sent —
+   * but becomes resendable once the cooldown passes.
+   */
+  canResend: boolean;
+  /** Present only when `status` is 'contact'. */
+  chatId?: string;
 }
 
 export interface ChatRequest {
@@ -57,18 +73,64 @@ export interface ChatSummary {
   at: string;
   unread: number;
   reachable: boolean;
+  /**
+   * We blocked this contact. The core refuses sends to them, so the chat
+   * screen shows an unblock prompt in place of the composer.
+   */
+  blocked: boolean;
+}
+
+/** One row of Profile › Blocked users. */
+export interface BlockedPeer {
+  peerId: string;
+  /** Best name the core holds — may be empty for a peer never named. */
+  nickname: string;
+  /** Always present: falls back to the fingerprint suffix when unnamed. */
+  handle: string;
+  /** Relative, e.g. "3d". */
+  at: string;
+}
+
+/**
+ * Radio state as the PLATFORM sees it — not the same question as whether the
+ * mesh is currently carrying traffic.
+ *
+ * `unsupported` is the desktop and browser-development answer: there is no
+ * radio to gate on, so the UI must treat it as usable rather than as a fault.
+ * Mirrors anytime::RadioAvailability in core/domain/Enums.h.
+ */
+export type RadioAvailability = 'unknown' | 'unsupported' | 'unauthorized' | 'off' | 'on';
+
+export interface BluetoothStatus {
+  state: RadioAvailability;
+  /** Android can show an in-app enable dialog; iOS can only open Settings. */
+  canPromptInApp: boolean;
 }
 
 export type DeliveryStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed';
+
+/**
+ * An image attached to a message. A REFERENCE, never the bytes — the chat list
+ * would otherwise be a multi-megabyte JSON document. Fetch the image itself
+ * from `api.mediaUrl(id)`.
+ */
+export interface MediaRef {
+  id: string;
+  mimeType: string;
+  bytes: number;
+}
 
 export interface Message {
   id: string;
   chatId: string;
   clientMessageId: string;
+  /** For a media message this is the caption, and may be empty. */
   body: string;
   mine: boolean;
   at: string;
   status: DeliveryStatus;
+  /** Present only on image messages. */
+  media?: MediaRef;
 }
 
 export interface MessagePage {
@@ -143,8 +205,27 @@ export const api = {
     p: Partial<Pick<Account, 'username' | 'gender' | 'discoverable' | 'acceptFrom'>>,
   ) => request<Account>('account', { method: 'PATCH', body: JSON.stringify(p) }),
 
+  // ── Bluetooth ─────────────────────────────────────────────────────────────
+  /** Asks the platform fresh each time, so it is cheap to call on an event. */
+  getBluetooth: () => request<BluetoothStatus>('bluetooth'),
+
+  /**
+   * Raises the system prompt and returns immediately — NOT when the user
+   * answers, which may be seconds away or never. Watch `radio.state` instead.
+   */
+  enableBluetooth: () => post<void>('bluetooth/enable'),
+
+  /** The fallback when the in-app dialog cannot help (permanently denied). */
+  openBluetoothSettings: () => post<void>('bluetooth/settings'),
+
   // ── Discovery ─────────────────────────────────────────────────────────────
-  startDiscovery: () => post<void>('discovery'),
+  /**
+   * `active` scans continuously and is only justified while the Nearby screen is
+   * on screen. `passive` duty-cycles in the background, which is what keeps the
+   * mesh reachable without flattening the battery.
+   */
+  startDiscovery: (mode: 'active' | 'passive' = 'active') =>
+    post<void>('discovery', { mode }),
   stopDiscovery: () => request<void>('discovery', { method: 'DELETE' }),
   /** Peers inside the 60 s reachability window, strongest signal first. */
   getPeers: () => request<NearbyPeer[]>('discovery/peers'),
@@ -158,6 +239,8 @@ export const api = {
 
   // ── Chats ─────────────────────────────────────────────────────────────────
   getChats: () => request<ChatSummary[]>('chats'),
+  /** One chat row, so ChatScreen can name its peer without loading the list. */
+  getChat: (chatId: string) => request<ChatSummary>(`chats/${chatId}`),
   getMessages: (chatId: string, before?: string) =>
     request<MessagePage>(`chats/${chatId}/messages${before ? `?before=${encodeURIComponent(before)}` : ''}`),
   /** Returns immediately at status 'queued'; later transitions arrive over SSE. */
@@ -165,4 +248,41 @@ export const api = {
     post<Message>(`chats/${chatId}/messages`, { body, clientMessageId }),
   markRead: (chatId: string, messageId: string) =>
     post<void>(`chats/${chatId}/read`, { messageId }),
+  /**
+   * Resends a message the core marked `failed`. Only valid for a stored row —
+   * a bubble whose original POST never reached the core has no server id, and
+   * is resent with sendMessage and the same clientMessageId instead.
+   */
+  retryMessage: (messageId: string) => post<void>(`messages/${messageId}/retry`),
+
+  // ── Block list ────────────────────────────────────────────────────────────
+  getBlocked: () => request<BlockedPeer[]>('blocked'),
+  /** Also clears any request they have waiting. Idempotent. */
+  blockPeer: (peerId: string) => post<void>('blocked', { peerId }),
+  unblockPeer: (peerId: string) =>
+    request<void>(`blocked/${peerId}`, { method: 'DELETE' }),
+
+  // ── Media ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Sends an image. The image IS the request body — base64 inside JSON would
+   * cost a third more memory and parse time for nothing on a loopback socket.
+   *
+   * No Content-Type is set deliberately: the core identifies the format by
+   * inspecting the bytes and refuses anything that is not an image, so a value
+   * sent from here would be ignored at best and misleading at worst.
+   *
+   * The caller must downscale first — the core rejects anything over its limit.
+   */
+  sendMedia: (chatId: string, image: Blob, caption: string, clientMessageId: string) => {
+    const query = new URLSearchParams({ clientMessageId, caption });
+    return request<Message>(`chats/${chatId}/media?${query.toString()}`, {
+      method: 'POST',
+      headers: {}, // not JSON; overrides the default in request()
+      body: image,
+    });
+  },
+
+  /** Same-origin URL for a stored image, usable directly as an `<img src>`. */
+  mediaUrl: (mediaId: string) => apiUrl(`media/${mediaId}`),
 };

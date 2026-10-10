@@ -71,6 +71,17 @@ const char* toString(RequestState s) noexcept
     return "pending";
 }
 
+const char* toString(PeerStatus s) noexcept
+{
+    switch (s) {
+        case PeerStatus::None:      return "none";
+        case PeerStatus::Requested: return "requested";
+        case PeerStatus::Declined:  return "declined";
+        case PeerStatus::Contact:   return "contact";
+    }
+    return "none";
+}
+
 const char* toString(SignalBand b) noexcept
 {
     switch (b) {
@@ -90,6 +101,18 @@ const char* toString(TransportId t) noexcept
         case TransportId::NearbyConnections: return "nearby";
         case TransportId::Multipeer:         return "multipeer";
         case TransportId::Internet:          return "internet";
+    }
+    return "unknown";
+}
+
+const char* toString(RadioAvailability a) noexcept
+{
+    switch (a) {
+        case RadioAvailability::Unknown:      return "unknown";
+        case RadioAvailability::Unsupported:  return "unsupported";
+        case RadioAvailability::Unauthorized: return "unauthorized";
+        case RadioAvailability::Off:          return "off";
+        case RadioAvailability::On:           return "on";
     }
     return "unknown";
 }

@@ -18,8 +18,11 @@
 #include <QTcpSocket>
 #include <QTimer>
 
+#include <cstring>
 #include <unordered_map>
 #include <vector>
+
+#include "core/log/Log.h"
 
 namespace anytime::transport {
 
@@ -133,6 +136,8 @@ Result LoopbackTransport::start(const PeerId& localPeerId)
     QDir().mkpath(impl_->config.rendezvousDir);
 
     if (!impl_->server.listen(QHostAddress::LocalHost, 0)) {
+        AT_LOG_ERROR("loopback", "could not listen: {}",
+                     impl_->server.errorString().toStdString());
         return Result::error(ErrorCode::TransportUnavailable,
                              impl_->server.errorString().toStdString());
     }
@@ -144,6 +149,8 @@ Result LoopbackTransport::start(const PeerId& localPeerId)
     impl_->scanTimer.setInterval(impl_->config.scanIntervalMillis);
 
     impl_->started = true;
+    AT_LOG_INFO("loopback", "listening on 127.0.0.1:{}, rendezvous {}",
+                impl_->server.serverPort(), impl_->config.rendezvousDir.toStdString());
     if (impl_->listener) impl_->listener->onTransportStateChanged(id(), true);
     return Result::ok();
 }
@@ -216,6 +223,8 @@ Outcome<LinkId> LoopbackTransport::openLink(const PeerHandle& handle)
     auto* socket = new QTcpSocket(this);
     socket->connectToHost(QHostAddress::LocalHost, port);
     if (!socket->waitForConnected(500)) {
+        AT_LOG_DEBUG("loopback", "{} on port {} is not accepting links", handle.peerId.toHex(),
+                     port);
         socket->deleteLater();
         return Outcome<LinkId>::error(ErrorCode::LinkClosed, "Peer is not accepting links.");
     }
@@ -321,27 +330,11 @@ void LoopbackTransport::Impl::scanRendezvous()
         handle.address = QString::number(port).toStdString();
         handle.rssi = config.simulatedRssi;
 
+        // Report the sighting and nothing more. Whether to connect is decided in
+        // the core (DiscoveryService), exactly as it is for BLE. This transport
+        // used to connect on sight, which made desktop testing pass while the
+        // BLE path — which has no such shortcut — never opened a link at all.
         if (listener) listener->onPeerSeen(TransportId::Loopback, handle);
-
-        // Open a link on sight. On BLE this would be duty-cycled; here the cost
-        // is a socket, and having the link up makes announces flow immediately.
-        bool alreadyLinked = false;
-        for (const auto& [id, link] : links) {
-            if (link.peerId == *peerId) { alreadyLinked = true; break; }
-        }
-        if (alreadyLinked) continue;
-
-        auto* socket = new QTcpSocket(nullptr);
-        socket->connectToHost(QHostAddress::LocalHost, port);
-        if (!socket->waitForConnected(300)) {
-            socket->deleteLater();
-            continue;
-        }
-        QByteArray hello(reinterpret_cast<const char*>(localPeerId.bytes().data()),
-                         static_cast<int>(kPeerIdBytes));
-        socket->write(hello);
-        socket->flush();
-        adopt(socket, *peerId);
     }
 }
 
@@ -401,6 +394,8 @@ void LoopbackTransport::Impl::readFrom(QTcpSocket* socket)
                              | quint32(p[3]);
 
         if (size > protocol::kMaxReassembledBytes) {  // nonsense length: resync is impossible
+            AT_LOG_WARN("loopback", "link {} sent a {}-byte frame length; closing it",
+                        found->second, size);
             dropLink(found->second, LinkCloseReason::Error);
             return;
         }

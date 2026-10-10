@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+#include "core/log/Log.h"
+
 namespace anytime {
 
 LinkId PeerLinks::linkFor(TransportId t) const
@@ -25,6 +27,7 @@ TransportRegistry::~TransportRegistry()
 
 void TransportRegistry::addTransport(std::unique_ptr<ITransport> transport)
 {
+    AT_LOG_DEBUG("transport", "registered {}", toString(transport->id()));
     transport->setListener(this);
     transports_.push_back(std::move(transport));
 }
@@ -41,8 +44,13 @@ Result TransportRegistry::startAll(const PeerId& localPeerId)
 
     for (auto& transport : transports_) {
         const Result r = transport->start(localPeerId);
-        if (r.isOk()) anyStarted = true;
-        else if (firstError.isOk()) firstError = r;
+        if (r.isOk()) {
+            anyStarted = true;
+        } else {
+            AT_LOG_DEBUG("transport", "{} not started: {} ({})", toString(transport->id()),
+                         r.message(), toString(r.code()));
+            if (firstError.isOk()) firstError = r;
+        }
     }
 
     // One working transport is enough to run; a phone with Bluetooth off should
@@ -58,6 +66,15 @@ void TransportRegistry::stopAll()
     for (auto& transport : transports_) transport->stop();
     peerLinks_.clear();
     linkOwners_.clear();
+    linkTransports_.clear();
+    unboundLinks_.clear();
+}
+
+bool TransportRegistry::allAvailable() const
+{
+    if (transports_.empty()) return false;
+    return std::all_of(transports_.begin(), transports_.end(),
+                       [](const auto& transport) { return transport->isAvailable(); });
 }
 
 Result TransportRegistry::startDiscovery(DiscoveryMode mode)
@@ -121,6 +138,9 @@ Outcome<LinkId> TransportRegistry::ensureLink(TransportId id, const PeerHandle& 
     if (!transport) {
         return Outcome<LinkId>::error(ErrorCode::TransportUnavailable, "Unknown transport.");
     }
+    if (!transport->isAvailable()) {
+        return Outcome<LinkId>::error(ErrorCode::TransportUnavailable, "Transport is down.");
+    }
     return transport->openLink(handle);
 }
 
@@ -130,7 +150,31 @@ const PeerLinks* TransportRegistry::linksFor(const PeerId& peerId) const
     return it == peerLinks_.end() ? nullptr : &it->second;
 }
 
-// ── ITransportListener — record link state, then fan out ─────────────────────
+void TransportRegistry::attach(TransportId transport, LinkId link, const PeerId& peerId)
+{
+    PeerLinks& entry = peerLinks_[peerId];
+    entry.peerId = peerId;
+    entry.links[transport] = link;  // the newest link becomes the preferred one
+    linkOwners_[link] = peerId;
+    linkTransports_[link] = transport;
+}
+
+bool TransportRegistry::bindLink(TransportId transport, LinkId link, const PeerId& peerId)
+{
+    if (peerId.isNull()) return false;
+
+    const auto unbound = unboundLinks_.find(link);
+    if (unbound == unboundLinks_.end() || unbound->second != transport) return false;
+
+    unboundLinks_.erase(unbound);
+    attach(transport, link, peerId);
+
+    AT_LOG_DEBUG("transport", "incoming {} link {} identified as {}", toString(transport), link,
+                 peerId.toHex());
+    return true;
+}
+
+// ── ITransportListener ───────────────────────────────────────────────────────
 
 void TransportRegistry::onPeerSeen(TransportId id, const PeerHandle& handle)
 {
@@ -139,29 +183,57 @@ void TransportRegistry::onPeerSeen(TransportId id, const PeerHandle& handle)
 
 void TransportRegistry::onLinkUp(TransportId id, LinkId link, const PeerId& peerId)
 {
-    PeerLinks& entry = peerLinks_[peerId];
-    entry.peerId = peerId;
-    entry.links[id] = link;
-    linkOwners_[link] = peerId;
+    if (peerId.isNull()) {
+        // Incoming, identity unknown until the peer announces. See bindLink().
+        unboundLinks_[link] = id;
+        AT_LOG_DEBUG("transport", "{} link {} up, peer not yet identified", toString(id), link);
+    } else {
+        attach(id, link, peerId);
+        AT_LOG_DEBUG("transport", "{} link {} up to {}", toString(id), link, peerId.toHex());
+    }
 
     if (downstream_) downstream_->onLinkUp(id, link, peerId);
 }
 
 void TransportRegistry::onLinkDown(TransportId id, LinkId link, LinkCloseReason reason)
 {
+    unboundLinks_.erase(link);
+
     const auto owner = linkOwners_.find(link);
     if (owner != linkOwners_.end()) {
         const PeerId peerId = owner->second;
         linkOwners_.erase(owner);
+        linkTransports_.erase(link);
 
         const auto entry = peerLinks_.find(peerId);
         if (entry != peerLinks_.end()) {
-            entry->second.links.erase(id);
-            // Keep the peer even with no links: liveness is announce-driven,
-            // and dropping it here would contradict that (section 11).
-            if (entry->second.links.empty()) peerLinks_.erase(entry);
+            auto& links = entry->second.links;
+            const auto preferred = links.find(id);
+
+            // Only touch routing if the link that dropped is the one routing was
+            // using. A peer can hold two links on one transport — one outgoing,
+            // one incoming — and losing the spare must not strand the live one.
+            if (preferred != links.end() && preferred->second == link) {
+                links.erase(preferred);
+
+                for (const auto& [otherLink, otherOwner] : linkOwners_) {
+                    const auto transport = linkTransports_.find(otherLink);
+                    if (otherOwner == peerId && transport != linkTransports_.end()
+                        && transport->second == id) {
+                        links[id] = otherLink;
+                        break;
+                    }
+                }
+            }
+
+            // Liveness is announce-driven, so dropping the routing entry here
+            // does not make the peer "lost" (§11).
+            if (links.empty()) peerLinks_.erase(entry);
         }
     }
+
+    AT_LOG_DEBUG("transport", "{} link {} down (reason {})", toString(id), link,
+                 static_cast<int>(reason));
 
     if (downstream_) downstream_->onLinkDown(id, link, reason);
 }
@@ -173,6 +245,7 @@ void TransportRegistry::onFrame(TransportId id, LinkId link, ByteSpan frame)
 
 void TransportRegistry::onTransportStateChanged(TransportId id, bool available)
 {
+    AT_LOG_INFO("transport", "{} is now {}", toString(id), available ? "available" : "unavailable");
     if (downstream_) downstream_->onTransportStateChanged(id, available);
 }
 

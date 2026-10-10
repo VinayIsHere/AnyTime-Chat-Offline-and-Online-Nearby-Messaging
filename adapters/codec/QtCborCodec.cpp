@@ -18,6 +18,11 @@ enum Key : int {
     kBody = 4,
     kClientMessageId = 5,
     kSentAt = 6,
+    // Media. Appended, never inserted — renumbering any of the above would make
+    // every existing build misread every field.
+    kMimeType = 7,
+    kCaption = 8,
+    kBytes = 9,
 };
 
 QString str(const QCborMap& map, Key key)
@@ -73,6 +78,33 @@ Result QtCborCodec::encode(const protocol::AppEnvelope& envelope, ByteBuffer& ou
             map.insert(static_cast<qint64>(kClientMessageId),
                        QString::fromStdString(envelope.read->clientMessageId.value()));
             break;
+
+        case protocol::EnvelopeType::ChatMedia: {
+            if (!envelope.media) {
+                return Result::error(ErrorCode::InvalidArgument, "Missing media payload.");
+            }
+            // Refused here rather than at the radio: an oversized image would
+            // otherwise be encrypted and fragmented before anything noticed, and
+            // the receiver would reject it during reassembly after carrying the
+            // whole thing over the air.
+            if (envelope.media->bytes.size() > protocol::kMaxMediaBytes) {
+                return Result::error(ErrorCode::InvalidArgument, "Image is too large to send.");
+            }
+
+            map.insert(static_cast<qint64>(kClientMessageId),
+                       QString::fromStdString(envelope.media->clientMessageId.value()));
+            map.insert(static_cast<qint64>(kMimeType),
+                       QString::fromStdString(envelope.media->mimeType));
+            map.insert(static_cast<qint64>(kCaption),
+                       QString::fromStdString(envelope.media->caption));
+            // CBOR byte string, not base64 — encoding the bytes as text would add
+            // a third over the air for nothing.
+            map.insert(static_cast<qint64>(kBytes),
+                       QByteArray(reinterpret_cast<const char*>(envelope.media->bytes.data()),
+                                  static_cast<int>(envelope.media->bytes.size())));
+            map.insert(static_cast<qint64>(kSentAt), static_cast<qint64>(envelope.media->sentAt));
+            break;
+        }
     }
 
     const QByteArray encoded = map.toCborValue().toCbor();
@@ -126,6 +158,32 @@ Result QtCborCodec::decode(ByteSpan bytes, protocol::AppEnvelope& out)
             protocol::ChatReadPayload payload;
             payload.clientMessageId = ClientMessageId{str(map, kClientMessageId).toStdString()};
             out.read = payload;
+            break;
+        }
+        case protocol::EnvelopeType::ChatMedia: {
+            out.type = protocol::EnvelopeType::ChatMedia;
+            protocol::ChatMediaPayload payload;
+
+            const QByteArray bytes = map.value(static_cast<qint64>(kBytes)).toByteArray();
+            // The sender is not trusted to respect the cap. Reject before the
+            // bytes are copied anywhere or handed to storage.
+            if (static_cast<std::size_t>(bytes.size()) > protocol::kMaxMediaBytes) {
+                return Result::error(ErrorCode::MalformedPacket, "Image exceeds the size limit.");
+            }
+            if (bytes.isEmpty()) {
+                return Result::error(ErrorCode::MalformedPacket, "Media envelope carries no image.");
+            }
+
+            payload.clientMessageId = ClientMessageId{str(map, kClientMessageId).toStdString()};
+            payload.mimeType = str(map, kMimeType).toStdString();
+            payload.caption =
+                str(map, kCaption).left(static_cast<qsizetype>(protocol::kMaxCaptionChars))
+                    .toStdString();
+            payload.bytes.assign(reinterpret_cast<const Byte*>(bytes.constData()),
+                                 reinterpret_cast<const Byte*>(bytes.constData() + bytes.size()));
+            payload.sentAt = map.value(static_cast<qint64>(kSentAt)).toInteger(0);
+
+            out.media = payload;
             break;
         }
         default:

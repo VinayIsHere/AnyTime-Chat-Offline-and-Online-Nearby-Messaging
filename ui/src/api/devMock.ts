@@ -18,7 +18,16 @@
  */
 
 import { BASE_PATH, IS_NATIVE_SHELL } from './base';
-import type { Account, ChatRequest, ChatSummary, Gender, NearbyPeer } from './client';
+import type {
+  Account,
+  BlockedPeer,
+  BluetoothStatus,
+  ChatRequest,
+  ChatSummary,
+  Gender,
+  NearbyPeer,
+  RadioAvailability,
+} from './client';
 
 const STORAGE_KEY = 'anytime.devmock.account';
 
@@ -54,6 +63,26 @@ function saveAccount(a: Account): void {
   }
 }
 
+let mockBlocked: BlockedPeer[] = [];
+
+const RADIO_KEY = 'anytime.devmock.bluetooth';
+
+function readMockRadio(): RadioAvailability | null {
+  try {
+    return localStorage.getItem(RADIO_KEY) as RadioAvailability | null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMockRadio(state: RadioAvailability): void {
+  try {
+    localStorage.setItem(RADIO_KEY, state);
+  } catch {
+    /* private window — the gate simply stays where it is */
+  }
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -68,7 +97,18 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function handle(path: string, init: RequestInit | undefined): Promise<Response | null> {
   const method = (init?.method ?? 'GET').toUpperCase();
-  const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+
+  // Only JSON bodies are parsed. An image upload sends a Blob, and
+  // String(blob) is "[object Blob]" — parsing that threw inside the fetch
+  // interceptor and broke every request in dev, not just the upload.
+  let body: any;
+  if (typeof init?.body === 'string') {
+    try {
+      body = JSON.parse(init.body);
+    } catch {
+      body = undefined; // not JSON — leave it alone
+    }
+  }
 
   // ── Account ───────────────────────────────────────────────────────────────
   if (path === 'account') {
@@ -105,6 +145,42 @@ async function handle(path: string, init: RequestInit | undefined): Promise<Resp
     }
   }
 
+  // ── Bluetooth ─────────────────────────────────────────────────────────────
+  // A browser has no radio, so the default is 'unsupported' and the gate never
+  // shows. To review the gate screen, set the key in devtools:
+  //   localStorage.setItem('anytime.devmock.bluetooth', 'off')  // or 'unauthorized'
+  // "Turn on Bluetooth" then flips it to 'on', and the screen closes on the
+  // hook's next refetch — there is no SSE here to prompt it sooner.
+  if (path === 'bluetooth' && method === 'GET') {
+    const state = readMockRadio() ?? 'unsupported';
+    return json({ state, canPromptInApp: state !== 'unsupported' } satisfies BluetoothStatus);
+  }
+  if (path === 'bluetooth/enable' && method === 'POST') {
+    if (readMockRadio()) writeMockRadio('on');
+    return new Response(null, { status: 204 });
+  }
+  if (path === 'bluetooth/settings' && method === 'POST') {
+    return new Response(null, { status: 204 });
+  }
+
+  // ── Block list ────────────────────────────────────────────────────────────
+  // In memory only: there are no peers in a browser to block for real, so this
+  // exists to let the Profile list and the unblock button be exercised.
+  if (path === 'blocked' && method === 'GET') return json(mockBlocked);
+  if (path === 'blocked' && method === 'POST') {
+    if (!mockBlocked.some((b) => b.peerId === body?.peerId)) {
+      mockBlocked.unshift({ peerId: body.peerId, nickname: '', handle: '@' + String(body.peerId).slice(-4), at: 'now' });
+    }
+    return new Response(null, { status: 204 });
+  }
+  if (/^blocked\/[^/]+$/.test(path) && method === 'DELETE') {
+    mockBlocked = mockBlocked.filter((b) => b.peerId !== path.split('/')[1]);
+    return new Response(null, { status: 204 });
+  }
+  if (/^messages\/[^/]+\/retry$/.test(path) && method === 'POST') {
+    return new Response(null, { status: 204 });
+  }
+
   // ── Everything else: empty, well-shaped responses ─────────────────────────
   // Enough for the shell to render without errors. Real behaviour arrives with
   // the loopback transport.
@@ -114,6 +190,17 @@ async function handle(path: string, init: RequestInit | undefined): Promise<Resp
   if (path === 'chats') return json([] as ChatSummary[]);
   if (/^chats\/[^/]+\/messages$/.test(path) && method === 'GET') {
     return json({ messages: [], nextCursor: null, hasMore: false });
+  }
+  if (/^chats\/[^/]+$/.test(path) && method === 'GET') {
+    return errorBody('not_found', 'No such chat.', 404);
+  }
+  // Images need the real core: there is nothing here to store bytes in, and
+  // pretending to succeed would hide that from anyone testing in a browser.
+  if (/^chats\/[^/]+\/media$/.test(path) && method === 'POST') {
+    return errorBody('precondition_failed', 'Sending images needs the app core.', 412);
+  }
+  if (/^media\/[^/]+$/.test(path) && method === 'GET') {
+    return errorBody('not_found', 'No such image.', 404);
   }
 
   return null; // not mocked — let it fall through to a real fetch

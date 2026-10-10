@@ -10,8 +10,9 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) first — this file only describes the
 ## What is here
 
 Every interface and class declaration for phases 0 and 1, with the reasoning
-attached to the code that implements it. Headers are complete; `.cpp` files are
-not yet written.
+attached to the code that implements it. The `.cpp` files behind them are now
+written too — this file has been updated as they landed, so treat the table
+below as the current state rather than the original scaffold.
 
 | Area | Files | State |
 |---|---|---|
@@ -20,7 +21,10 @@ not yet written.
 | `core/protocol/` | `Packet.h`, `PacketCodec.h`, `DedupCache.h`, `Fragmenter.h`, `AppEnvelope.h` | Declared |
 | `core/services/` | 9 service headers | Declared |
 | `core/AppCore.h` | Composition façade + `IMeshListener` | Declared |
-| `adapters/` | http, persistence, transport ×2, identity, crypto, codec, clock | Declared |
+| `adapters/` | http, persistence, transport ×2, identity, crypto, codec, clock | Implemented |
+| `adapters/persistence/sqlite/` | `SqliteStore`, `MonocypherDataCipher` | **Implemented** — schema v3, WAL, encrypted at rest |
+| `adapters/transport/nearby/` | `NearbyConnectionsTransport` + `NearbyRadio.java` | **Implemented** — bulk transport for photos; see [TRANSPORTS.md](TRANSPORTS.md) |
+| `tests/` | 6 suites on a dependency-free harness | **188 assertions passing** |
 | `app/` | `main.cpp`, two QML shells | **`main.cpp` is complete** — read it for the wiring |
 | `platform/android/` | `BleRadio.java` | Signature only, throws `UnsupportedOperationException` |
 | `scripts/` | `check-core-includes.sh` | **Working** — run it |
@@ -62,7 +66,7 @@ it, so they are hard to violate accidentally.
 ## The UI
 
 Moved out of `claude_design/src_v1/` into `ui/`, and it **typechecks and builds**
-(`npm run build` → `dist/index.html` + one 282 kB bundle). Run it today with
+(`npm run build:native` → `dist/index.html` + one 282 kB bundle). Run it today with
 `cd ui && npm run dev`.
 
 Three changes were needed on the way in:
@@ -107,15 +111,41 @@ transport (AD-07), which exercises the real C++ core.
 
 ## Deliberately not here yet
 
-- **All `.cpp` implementations.** Headers first, on purpose — the interfaces are
-  the thing worth reviewing before any of them is filled in.
-- **`tests/`** — `CMakeLists.txt` references it behind `ANYTIME_BUILD_TESTS`.
-  Needs GoogleTest wired up plus `FakeClock`, `FakeTransport`, `InMemoryStore`.
-- **`platform/android/AndroidManifest.xml` and `build.gradle`** — permissions are
-  listed in ARCHITECTURE.md §14.
-- **libsodium / noise-c fetch logic** in CMake.
-- **A real service UUID.** `core/protocol/Packet.h` carries a placeholder;
-  generate a random one before the first field build.
+Most of this list has since been built — the entries below are what genuinely
+remains.
+
+- **Panic wipe is unfinished.** `AccountService::wipe()` clears the account row
+  and the identity key only — every message, chat and contact stays in the
+  database, and the at-rest data key stays on disk beside it. The missing pieces
+  exist and are tested (`SqliteStore::wipeAll()`, `MonocypherDataCipher::wipe()`);
+  they need injecting, a route, and confirm UI. See the TODO on that function.
+- **Android Keystore wrapping.** The identity key and the at-rest data key are
+  both plain files with owner-only permissions. This is the remaining half of
+  ARCHITECTURE.md §10 and changes only the identity adapter.
+- **Noise test vectors.** `tests/NoiseTests.cpp` proves our implementation agrees
+  with itself, not that it agrees with the specification.
+- **`KeystoreIdentityStore`** is a header with no `.cpp` and is not in the build.
+  It is the design sketch for the item above, not working code.
+- ~~**A transaction seam.**~~ **Done.** `ITransactionScope` in `IRepositories.h`,
+  implemented by `SqliteStore`. Accepting a request writes the contact, the chat and
+  the request state as one unit, so a crash can no longer leave a contact with no
+  chat. A contact who asks again is now answered with our accept, which repairs a
+  pair where only one side recorded it.
+- ~~**Packet length padding is not implemented.**~~ **Done** (protocol v3) — padded
+  inside the encryption; see ARCHITECTURE.md §10.
+- **Multi-hop relay — LOW PRIORITY, not scheduled for v1** (AD-09).
+  `MeshEngine::maybeRelay()` is an empty stub with no call site; `relayEnabled_`
+  does nothing. TTL and the dedup cache are built, the forwarding is not.
+- **iOS — LOW PRIORITY, not scheduled.** v1 ships Android only. The nine-method
+  transport seam stays honest so the port remains cheap, but nothing should be
+  designed around it and no work is planned.
+- **Video — LOW PRIORITY, not in v1.** The media path encrypts and fragments a
+  whole buffer, which works for a 192 KB photo and not for a video. Streaming is
+  a different design, not a bigger constant.
+- **Images and Nearby are untested on hardware.** Both paths compile, are unit
+  tested, and gradle builds the Java — but no photo has crossed a Wi-Fi Direct
+  link, and none has crossed BLE either. See [TRANSPORTS.md](TRANSPORTS.md) §10
+  for exactly what is and is not covered.
 
 ---
 

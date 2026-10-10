@@ -1,23 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { MessageCircle, UserPlus, Radar, User } from 'lucide-react';
 import { colors, motion, shadow } from '../theme/theme';
+import { api } from '../api/client';
+import { onEvent } from '../api/events';
 
 type Tab = { to: string; label: string; Icon: typeof MessageCircle; badge?: number };
 
-const TABS: Tab[] = [
-  { to: '/chats', label: 'Chats', Icon: MessageCircle },
-  { to: '/requests', label: 'Requests', Icon: UserPlus, badge: 2 },
-  { to: '/profile', label: 'Profile', Icon: User },
-];
-
-export default function BottomNav() {
+/**
+ * @param requestCount  Pending-request count supplied by a screen that already
+ *   holds the list (RequestsScreen), so its badge updates the instant a request
+ *   is accepted or declined. Every other screen omits it and BottomNav tracks
+ *   the count itself.
+ */
+export default function BottomNav({ requestCount }: { requestCount?: number }) {
   const navigate = useNavigate();
+  const ownCount = usePendingRequestCount(requestCount === undefined);
+  const badge = requestCount ?? ownCount;
+
   return (
     <nav style={bottomNavStyles.root}>
-      {TABS.slice(0, 2).map((t) => <TabItem key={t.to} {...t} />)}
+      <TabItem to="/chats" label="Chats" Icon={MessageCircle} />
+      <TabItem to="/requests" label="Requests" Icon={UserPlus} badge={badge} />
       <span />
-      <TabItem {...TABS[2]} />
+      <TabItem to="/profile" label="Profile" Icon={User} />
       <button
         style={bottomNavStyles.fab}
         onClick={() => navigate('/nearby')}
@@ -28,6 +34,47 @@ export default function BottomNav() {
       </button>
     </nav>
   );
+}
+
+/** Live count of inbound requests: one fetch, then kept current over SSE. */
+function usePendingRequestCount(enabled: boolean): number {
+  const [ids, setIds] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+
+    api.getRequests()
+      .then((list) => {
+        if (!cancelled) setIds(new Set(list.map((r) => r.id)));
+      })
+      .catch(() => {
+        /* no badge beats a wrong badge */
+      });
+
+    const without = (id: string) =>
+      setIds((current) => {
+        if (!current.has(id)) return current;
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+
+    const offReceived = onEvent('request.received', (req) =>
+      setIds((current) => (current.has(req.id) ? current : new Set(current).add(req.id))),
+    );
+    const offAccepted = onEvent('request.accepted', ({ request }) => without(request.id));
+    const offDeclined = onEvent('request.declined', ({ id }) => without(id));
+
+    return () => {
+      cancelled = true;
+      offReceived();
+      offAccepted();
+      offDeclined();
+    };
+  }, [enabled]);
+
+  return ids.size;
 }
 
 function TabItem({ to, label, Icon, badge }: Tab) {
@@ -45,7 +92,11 @@ function TabItem({ to, label, Icon, badge }: Tab) {
 }
 
 const bottomNavStyles: Record<string, React.CSSProperties> = {
-  root: { position: 'relative', flex: 'none', height: 92, paddingTop: 12, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', alignItems: 'start', borderTop: '1px solid ' + colors.border, background: colors.bgElevated },
+  // Height is intrinsic, never fixed: the old `height: 92` was sized for an
+  // iPhone home-indicator inset and left ~30px of dead space under the labels on
+  // Android. The bottom safe-area inset is carried HERE rather than on Screen so
+  // this bar's own background reaches the physical bottom edge (see Screen.tsx).
+  root: { position: 'relative', flex: 'none', paddingTop: 10, paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))', display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', alignItems: 'start', borderTop: '1px solid ' + colors.border, background: colors.bgElevated },
   tab: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, textDecoration: 'none', transition: 'color ' + motion.fast },
   tabLabel: { fontSize: 10.5 },
   badge: { position: 'absolute', top: -2, right: 24, minWidth: 17, height: 17, padding: '0 4px', borderRadius: 9, background: colors.accent, color: colors.white, fontSize: 10, fontWeight: 700, lineHeight: '17px', textAlign: 'center' },

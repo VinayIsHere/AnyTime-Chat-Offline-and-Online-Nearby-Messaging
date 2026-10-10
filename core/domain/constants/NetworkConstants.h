@@ -35,8 +35,21 @@ inline constexpr Timestamp kSseHeartbeatMillis = 20LL * 1000;
 inline constexpr int kDefaultHistoryPageSize = 50;
 inline constexpr int kMaxHistoryPageSize     = 200;
 
-/// Request bodies larger than this are rejected outright. The local API only
-/// ever receives small JSON, so a large body means something is wrong.
-inline constexpr std::size_t kMaxRequestBodyBytes = 64 * 1024;
+/// Request bodies larger than this are rejected outright.
+///
+/// Raised from 64 KB to carry an image upload. The WebView POSTs a downscaled
+/// photo to the core as a request body, and at 64 KB that upload failed before
+/// any radio was involved — the cap, not Bluetooth, was the first ceiling a
+/// photo hit.
+///
+/// Kept only a little above kMaxMediaBytes (192 KB) rather than made generous:
+/// the whole body is buffered in memory by the parser before dispatch, so this
+/// value is also the most memory a single unauthenticated request can make the
+/// process allocate. Every other endpoint still receives small JSON.
+///
+/// It tracks kMaxMediaBytes down as well as up. This was 768 KB when the media
+/// cap was 512 KB; leaving it there once the cap fell to 192 KB would have kept
+/// the number while quietly abandoning the reason for it.
+inline constexpr std::size_t kMaxRequestBodyBytes = 256 * 1024;
 
 }  // namespace anytime

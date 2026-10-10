@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        NoActionBar so the WebView owns the whole surface — the app draws its own
+        header in React.
+
+        windowOptOutEdgeToEdgeEnforcement opts out of the forced edge-to-edge
+        layout Android 15 (API 35) applies by default. Without it the status bar
+        becomes transparent and content slides underneath, which would mean
+        handling insets in CSS for one Android version. Opting out keeps the
+        status bar opaque and the page starting below it, matching how the UI is
+        already laid out.
+
+        The light status bar pairs with the app's default light theme. A user who
+        switches to dark in Profile gets a light-on-dark status bar mismatch for
+        now; fixing that needs a runtime call, not a static style.
+    -->
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+        <item name="android:statusBarColor">#F7F7FA</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">#F7F7FA</item>
+    </style>
+</resources>

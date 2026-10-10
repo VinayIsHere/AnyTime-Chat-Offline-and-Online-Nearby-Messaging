@@ -14,7 +14,7 @@
 // +---------------------------------------------------------------+
 // |   recipient id — 8 bytes, absent when broadcast (flag bit 0)  |
 // +---------------------------------------------------------------+
-// | payload length (u16) | payload …                              |
+// | payload length (u32) | payload …                              |
 // +---------------------------------------------------------------+
 // |        [ Ed25519 signature — 64 bytes, ANNOUNCE only ]        |
 // +---------------------------------------------------------------+
@@ -23,6 +23,7 @@
 
 #include <cstdint>
 
+#include "core/domain/Result.h"
 #include "core/domain/Types.h"
 
 namespace anytime::protocol {
@@ -30,7 +31,7 @@ namespace anytime::protocol {
 namespace flags {
 inline constexpr Byte kBroadcast = 0x01;  ///< recipient id absent
 inline constexpr Byte kSigned    = 0x02;  ///< trailing Ed25519 signature present
-inline constexpr Byte kPadded    = 0x04;  ///< payload padded to a bucket
+inline constexpr Byte kPadded    = 0x04;  ///< plaintext was padded before encryption
 }  // namespace flags
 
 /// A decoded packet. `payload` and `signature` point INTO the caller's buffer —
@@ -52,8 +53,22 @@ struct Packet {
     bool isPadded()    const { return (flagBits & flags::kPadded) != 0; }
 };
 
-/// Rounds up to the next entry in kPaddingBuckets. Encrypted packets only —
-/// cleartext types travel at natural length.
+/// Rounds up to the next entry in kPaddingBuckets, and above the largest bucket
+/// to the next multiple of it. Encrypted packets only — cleartext types travel
+/// at natural length.
 std::size_t paddedSizeFor(std::size_t plaintextSize) noexcept;
+
+/// Pads a plaintext BEFORE it is encrypted:
+///
+///   [ real length : u32 BE ][ plaintext ][ zero fill ... ]
+///
+/// sized to paddedSizeFor(prefix + plaintext). The receiver strips it after
+/// decrypting, trusting the prefix only because the AEAD has authenticated it.
+ByteBuffer padPlaintext(ByteSpan plaintext);
+
+/// Reverses padPlaintext. MalformedPacket if the declared length does not fit.
+/// The fill is not required to be zero, so a later build may choose another
+/// filler without breaking this one.
+Result unpadPlaintext(ByteSpan padded, ByteBuffer& plaintext);
 
 }  // namespace anytime::protocol

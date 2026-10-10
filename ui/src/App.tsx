@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useEffect, useState, type ReactElement } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { ROUTER_BASENAME } from './api/base';
 import { ApiError, api, type Account } from './api/client';
 import { applyThemeMode, colors, font, getThemeMode } from './theme/theme';
+import { useBluetooth } from './hooks/useBluetooth';
 
+import BluetoothOffScreen from './screens/BluetoothOffScreen';
 import ChatScreen from './screens/ChatScreen';
 import ChatsScreen from './screens/ChatsScreen';
 import NearbyScreen from './screens/NearbyScreen';
@@ -56,17 +58,50 @@ export default function App() {
     <BrowserRouter basename={ROUTER_BASENAME}>
       <Routes>
         <Route path="/" element={<Navigate to={entry} replace />} />
+        {/* Setup runs before the radio matters: someone with Bluetooth off can
+            still create an account, and gating this would strand them with no
+            way forward. */}
         <Route path="/welcome" element={<WelcomeScreen />} />
         <Route path="/setup" element={<SetupAccountScreen />} />
-        <Route path="/nearby" element={<NearbyScreen />} />
-        <Route path="/requests" element={<RequestsScreen />} />
-        <Route path="/chats" element={<ChatsScreen />} />
-        <Route path="/chats/:chatId" element={<ChatScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
+
+        {/* Deliberately NOT wrapped — wrapping the gate in the gate would loop.
+            BluetoothOffScreen navigates away itself once the radio is back. */}
+        <Route path="/bluetooth" element={<BluetoothOffScreen />} />
+
+        <Route path="/nearby" element={<RequireBluetooth><NearbyScreen /></RequireBluetooth>} />
+        <Route path="/requests" element={<RequireBluetooth><RequestsScreen /></RequireBluetooth>} />
+        <Route path="/chats" element={<RequireBluetooth><ChatsScreen /></RequireBluetooth>} />
+        <Route path="/chats/:chatId" element={<RequireBluetooth><ChatScreen /></RequireBluetooth>} />
+        <Route path="/profile" element={<RequireBluetooth><ProfileScreen /></RequireBluetooth>} />
         <Route path="*" element={<Navigate to={entry} replace />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+/**
+ * v1 is Bluetooth-only, so with the radio off every screen behind this is a
+ * dead end: no peers, no sending, no receiving. It redirects rather than
+ * overlaying a dismissible banner, because dismissing it would only reveal an
+ * app that silently does nothing.
+ *
+ * `unsupported` passes straight through — that is desktop and browser
+ * development, where there is no radio to gate on at all.
+ */
+function RequireBluetooth({ children }: { children: ReactElement }) {
+  const { state, isReady } = useBluetooth();
+  const location = useLocation();
+
+  // One frame of nothing while the first status lands. Rendering the gate here
+  // would flash it at everyone whose Bluetooth is perfectly fine.
+  if (state === 'unknown') return null;
+
+  // `from` is what lets the gate put the user back where they were rather than
+  // dropping everyone on /nearby.
+  if (!isReady) {
+    return <Navigate to="/bluetooth" replace state={{ from: location.pathname }} />;
+  }
+  return children;
 }
 
 /** Shown for the few hundred ms the account probe takes. */
@@ -102,7 +137,9 @@ function CoreUnreachable() {
 
 const bootStyles: Record<string, React.CSSProperties> = {
   root: {
-    height: '100dvh',
+    // 100%, not 100dvh — old Android WebViews ignore dvh (see Screen.tsx).
+    height: '100%',
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

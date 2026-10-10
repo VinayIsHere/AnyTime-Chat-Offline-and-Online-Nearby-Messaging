@@ -30,12 +30,22 @@ export default function NearbyScreen() {
   const [radioOk, setRadioOk] = useState(true);
   const [sending, setSending] = useState<string | null>(null);
 
-  const upsert = useCallback((peer: NearbyPeer) => {
-    setPeers((current) => {
-      const next = current.filter((p) => p.peerId !== peer.peerId);
-      next.push(peer);
-      return next.sort(bySignal);
-    });
+  /**
+   * Re-reads the whole list from the core. Declared above the effect that uses
+   * it, and preferred over merging event payloads.
+   *
+   * `peer.discovered` carries a SIGHTING, not a status: SseHub cannot see the
+   * request gate, so its status fields are neutral placeholders. Merging one in
+   * would re-announce an accepted contact as a stranger and clobber a correct
+   * row. Discoveries are rare — the core emits one only on first sight — so a
+   * refetch per discovery is cheap and always right.
+   */
+  const refreshPeers = useCallback(() => {
+    api.getPeers()
+      .then((list) => setPeers([...list].sort(bySignal)))
+      .catch(() => {
+        /* radio down; peer.lost clears the list */
+      });
   }, []);
 
   useEffect(() => {
@@ -44,7 +54,7 @@ export default function NearbyScreen() {
     // Start the radio, then seed from whatever is already reachable. Live
     // updates arrive over SSE from here on.
     api
-      .startDiscovery()
+      .startDiscovery('active')
       .then(() => api.getPeers())
       .then((list) => {
         if (!cancelled) setPeers([...list].sort(bySignal));
@@ -53,28 +63,49 @@ export default function NearbyScreen() {
         if (!cancelled) setRadioOk(false);
       });
 
-    const offSeen = onEvent('peer.discovered', upsert);
+    const offSeen = onEvent('peer.discovered', refreshPeers);
     const offLost = onEvent('peer.lost', ({ peerId }) =>
       setPeers((current) => current.filter((p) => p.peerId !== peerId)),
     );
     const offRadio = onEvent('radio.state', ({ available }) => setRadioOk(available));
+
+    // A decline or an accept changes what this screen should offer, and both
+    // arrive while it is open. Refetch rather than guess at the new status.
+    const offDeclined = onEvent('request.declined', refreshPeers);
+    const offAccepted = onEvent('request.accepted', refreshPeers);
 
     return () => {
       cancelled = true;
       offSeen();
       offLost();
       offRadio();
-      // Discovery keeps running in the background so requests can still arrive;
-      // phase 4 drops it to a passive duty cycle when this screen is not visible.
+      offDeclined();
+      offAccepted();
+
+      // Drop to the background duty cycle rather than stopping: discovery has to
+      // keep running or inbound requests would never arrive, but a continuous
+      // scan is only justified while someone is actually watching this screen.
+      api.startDiscovery('passive').catch(() => {
+        /* the radio is already down, which is the same outcome */
+      });
     };
-  }, [upsert]);
+  }, [refreshPeers]);
 
   async function sayHi(peer: NearbyPeer) {
     setSending(peer.peerId);
     try {
       await api.sendRequest(peer.peerId);
-      navigate('/requests');
+
+      // Stay on this screen. Navigating to /requests was wrong twice over: that
+      // list holds INBOUND requests, so the one just sent was never there, and
+      // being thrown off the radar mid-scan loses whoever else was in range.
+      //
+      // Refetch rather than patch locally — the server owns the status, and it
+      // is the only thing that survives leaving this screen.
+      refreshPeers();
     } catch {
+      /* the row keeps its previous status; the next refresh corrects it */
+    } finally {
       setSending(null);
     }
   }
@@ -128,14 +159,22 @@ export default function NearbyScreen() {
               {/* The full handle, including the fingerprint suffix — this is a
                   trust decision, so the discriminator is always shown here. */}
               <span style={nearbyStyles.cardName}>{p.handle}</span>
-              <span style={nearbyStyles.cardMeta}>{p.signal} signal</span>
+              <span style={nearbyStyles.cardMeta}>{metaFor(p)}</span>
             </span>
             <button
-              style={{ ...nearbyStyles.hi, ...(i === 0 ? nearbyStyles.hiPrimary : null) }}
-              disabled={sending === p.peerId}
-              onClick={() => sayHi(p)}
+              style={{
+                ...nearbyStyles.hi,
+                ...(i === 0 && p.status === 'none' ? nearbyStyles.hiPrimary : null),
+                ...(p.status === 'contact' ? nearbyStyles.hiPrimary : null),
+                ...(actionFor(p, sending === p.peerId).disabled ? nearbyStyles.hiMuted : null),
+              }}
+              disabled={actionFor(p, sending === p.peerId).disabled}
+              onClick={() => {
+                if (p.status === 'contact' && p.chatId) navigate('/chats/' + p.chatId);
+                else void sayHi(p);
+              }}
             >
-              {sending === p.peerId ? 'Sending…' : 'Say hi'}
+              {actionFor(p, sending === p.peerId).label}
             </button>
           </div>
         ))}
@@ -161,6 +200,45 @@ function initialOf(nickname: string): string {
   return (nickname.replace('@', '').charAt(0) || '?').toUpperCase();
 }
 
+/**
+ * The button, from the server-supplied status.
+ *
+ * `status` and `canResend` are deliberately separate: an unanswered request
+ * stays `requested` — so the row keeps saying it was sent — while becoming
+ * tappable again once the one-minute cooldown passes. Collapsing them would
+ * either hide that it was sent or leave the button grey forever, which is what
+ * happened when a peer simply never answered.
+ */
+function actionFor(peer: NearbyPeer, inFlight: boolean): { label: string; disabled: boolean } {
+  if (peer.status === 'contact') return { label: 'Message', disabled: false };
+  if (inFlight) return { label: 'Sending…', disabled: true };
+
+  switch (peer.status) {
+    case 'requested':
+      return peer.canResend
+        ? { label: 'Say hi again', disabled: false }
+        : { label: 'Requested', disabled: true };
+    case 'declined':
+      // A plain decline is told to us, so asking again is allowed. A decline
+      // WITH a block is never told to us by design, so that peer stays
+      // 'requested' and any resend is refused by the core — silently, which is
+      // the intended privacy behaviour.
+      return { label: 'Say hi again', disabled: false };
+    default:
+      return { label: 'Say hi', disabled: false };
+  }
+}
+
+/** Second line of a peer row: what we want to say about them, else signal. */
+function metaFor(peer: NearbyPeer): string {
+  switch (peer.status) {
+    case 'requested': return peer.canResend ? 'Request sent · no reply yet' : 'Request sent';
+    case 'declined':  return 'Request declined';
+    case 'contact':   return 'In your chats';
+    default:          return peer.signal + ' signal';
+  }
+}
+
 const nearbyStyles: Record<string, React.CSSProperties> = {
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px 6px', flex: 'none' },
   title: { margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' },
@@ -176,7 +254,7 @@ const nearbyStyles: Record<string, React.CSSProperties> = {
   countRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 24px 12px', flex: 'none' },
   count: { fontSize: 13, fontWeight: 700 },
   status: { fontSize: 12, fontWeight: 600, color: colors.textFaint },
-  list: { flex: 1, overflowY: 'auto', padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 10 },
+  list: { flex: 1, overflowY: 'auto', padding: '0 20px 28px', display: 'flex', flexDirection: 'column', gap: 10 },
   empty: { margin: '10px 6px', fontSize: 13, fontWeight: 500, lineHeight: 1.55, color: colors.textFaint, textAlign: 'center' },
   card: { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', borderRadius: 18, background: colors.surface, border: '1px solid ' + colors.border, animation: 'at-softIn 0.4s ease both', transition: 'background ' + motion.fast },
   avatar: { width: 44, height: 44, borderRadius: 14, background: colors.avatar, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 },
@@ -185,4 +263,6 @@ const nearbyStyles: Record<string, React.CSSProperties> = {
   cardMeta: { fontSize: 12, fontWeight: 500, color: colors.text45 },
   hi: { height: 36, padding: '0 15px', borderRadius: 12, border: '1px solid ' + colors.borderStrong, background: 'transparent', color: colors.text, fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', whiteSpace: 'nowrap', flex: 'none', cursor: 'pointer', transition: 'background ' + motion.fast },
   hiPrimary: { border: 0, background: colors.accent, color: colors.white },
+  // "Requested" during the cooldown: visibly sent, visibly not tappable.
+  hiMuted: { background: colors.fillSoft, color: colors.textFaint, border: '1px solid ' + colors.border, cursor: 'default' },
 };

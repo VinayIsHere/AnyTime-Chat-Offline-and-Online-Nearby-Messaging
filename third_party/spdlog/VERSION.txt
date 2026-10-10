@@ -1,0 +1,1 @@
+v1.17.0 — vendored from https://github.com/gabime/spdlog (MIT). Bundled fmt licence: include/spdlog/fmt/bundled/fmt.license.rst

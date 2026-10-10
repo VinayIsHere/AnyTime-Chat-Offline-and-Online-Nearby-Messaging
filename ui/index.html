@@ -8,12 +8,8 @@
     />
     <title>AnyTime Chat</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Manrope is bundled from @fontsource (imported in src/main.tsx), not
+         loaded from Google Fonts: this app must look right with no internet. -->
 
     <!--
       SECRET PATH PREFIX (AD-08, docs/ARCHITECTURE.md section 10).
@@ -43,9 +39,12 @@
     <style>
       * { -webkit-tap-highlight-color: transparent; }
       html, body, #root { height: 100%; margin: 0; }
+      /* Paint the theme background behind everything, so no WebView-white
+         band can ever show below or around the app shell. */
+      html, body { background: var(--at-bg, #F7F7FA); }
       body { overscroll-behavior: none; }
       /* The app draws its own scroll regions; the document never scrolls. */
-      body { overflow: hidden; }
+      html, body, #root { overflow: hidden; }
     </style>
   </head>
   <body>

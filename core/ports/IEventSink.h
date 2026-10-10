@@ -24,7 +24,10 @@ public:
 
     virtual void onRequestReceived(const Request&) = 0;
     virtual void onRequestAccepted(const Request&, const Chat&) = 0;
-    virtual void onRequestDeclined(const RequestId&) = 0;
+    /// The PeerId travels with the id because the Nearby screen keys everything
+    /// on peers, not on request ids — without it the screen cannot tell WHICH
+    /// peer to offer again, and would have to refetch the whole list to find out.
+    virtual void onRequestDeclined(const RequestId&, const PeerId&) = 0;
 
     virtual void onMessageReceived(const Message&) = 0;
     virtual void onMessageStatusChanged(const MessageId&, DeliveryStatus) = 0;

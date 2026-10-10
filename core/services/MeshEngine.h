@@ -94,13 +94,40 @@ public:
     }
 
 private:
+    /// `transport` and `link` are where the frame physically arrived. They travel
+    /// with the packet — through reassembly too — because binding an incoming
+    /// link to its peer needs them.
     void handlePacket(TransportId, LinkId, const protocol::Packet&, int rssi);
-    void handleAnnounce(const protocol::Packet&, int rssi);
+    void handleAnnounce(TransportId, LinkId, const protocol::Packet&, int rssi);
     void handleHandshake(const protocol::Packet&);
     void handleNoiseMessage(const protocol::Packet&);
     void handleAck(const protocol::Packet&);
+    void handleFragment(TransportId, LinkId, const protocol::Packet&, int rssi);
 
-    /// AD-09 — fields exist from phase 1; the behaviour is behind this flag.
+    /// Directed traffic for another peer is a relay candidate, never ours to
+    /// process. See the definition for why this check has to exist.
+    bool addressedToUs(const protocol::Packet&) const;
+
+    /// Encodes, fragments when needed, and sends to one peer on its best link.
+    ///
+    /// `cls` is passed in rather than derived from the packet type: by this point
+    /// every app payload is a NoiseMessage, so the type can no longer tell a
+    /// photo from a line of text. Deriving it here is what previously made
+    /// RoutingPolicy unable to ever see Bulk.
+    Result sendDirected(const PeerId&, protocol::PacketType, ByteSpan payload, PayloadClass cls);
+
+    /// Puts one already-encoded frame on ONE transport, fragmenting to that
+    /// transport's own budget.
+    ///
+    /// Separate from sendDirected because the budget is per transport — 480
+    /// bytes on BLE, 32 KB on Nearby — so a frame split for one cannot be handed
+    /// to the other. Each fallback attempt has to re-fragment.
+    Result sendFrame(ITransport&, LinkId, const ByteBuffer& frame, const PeerId& recipient,
+                     std::uint32_t timestamp);
+
+    /// AD-09 — NOT IMPLEMENTED and never called. The TTL field and dedup cache
+    /// exist; the forwarding behaviour does not. See the definition before
+    /// assuming relayEnabled_ does anything.
     void maybeRelay(const protocol::Packet&, TransportId arrivedOn);
 
     void scheduleAnnounce();
@@ -133,6 +160,28 @@ private:
     /// Most recent RSSI per peer, so an announce can be banded even though the
     /// signal arrives on a different callback than the packet.
     std::unordered_map<PeerId, int> lastRssi_;
+
+    /// Envelopes that could not go out because the Noise session was still
+    /// handshaking, flushed the moment it completes.
+    ///
+    /// Without this the FIRST envelope to a new peer is silently lost — and
+    /// the first envelope is always the chat request, so a 'say hi' that
+    /// happened to land during the handshake simply never arrived. Retrying
+    /// at this layer fixes it for every envelope type at once, rather than
+    /// each service inventing its own queue.
+    struct PendingEnvelope {
+        protocol::AppEnvelope envelope;
+        /// Remembered with the envelope, or a photo held through a handshake
+        /// would be flushed as Text and routed over the wrong transport.
+        PayloadClass cls = PayloadClass::Text;
+    };
+    std::unordered_map<PeerId, std::vector<PendingEnvelope>> pendingEnvelopes_;
+
+    /// Bounded, so a peer that never completes a handshake cannot grow this
+    /// without limit.
+    static constexpr std::size_t kMaxPendingPerPeer = 16;
+
+    void flushPending(const PeerId&);
 
     std::function<void(TransportId, const PeerHandle&)> peerSeenHook_;
     std::function<void(bool)>                          radioStateHook_;

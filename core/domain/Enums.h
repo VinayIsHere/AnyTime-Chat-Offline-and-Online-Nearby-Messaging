@@ -69,6 +69,18 @@ enum class DeliveryStatus : std::uint8_t {
 
 enum class RequestState : std::uint8_t { Pending = 0, Accepted = 1, Declined = 2 };
 
+/// How the Nearby screen should present a peer.
+///
+/// DERIVED, never stored: it is a view over the contact list plus the newest
+/// outgoing request, recomputed on every fetch. Storing it would create a second
+/// source of truth that could disagree with the rows it summarises.
+enum class PeerStatus : std::uint8_t {
+    None      = 0,  ///< never asked
+    Requested = 1,  ///< an outgoing request is pending
+    Declined  = 2,  ///< they said no — see the note in presentPeer() on blocking
+    Contact   = 3   ///< accepted; a chat exists
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Discovery and transport
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,6 +124,26 @@ enum class SessionState : std::uint8_t {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Radio availability as the PLATFORM sees it — a different question from
+// whether a transport is currently carrying traffic.
+//
+// ITransport reports "the mesh is up / down". This reports "why not, and can
+// the user do anything about it?", which is the only thing the Bluetooth gate
+// screen asks. Unsupported is not a failure: it is desktop and browser
+// development, where there is no radio to gate on at all.
+//
+// String forms are part of the local API contract — see Enums.cpp.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum class RadioAvailability : std::uint8_t {
+    Unknown      = 0,  ///< not yet determined
+    Unsupported  = 1,  ///< no radio on this platform (desktop, browser dev)
+    Unauthorized = 2,  ///< an adapter exists, but the permissions are not granted
+    Off          = 3,  ///< an adapter exists and is switched off
+    On           = 4   ///< usable
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Events pushed to the UI over SSE. Wire names must stay stable — they are part
 // of the local API contract the React client subscribes to.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -133,8 +165,10 @@ const char* toString(ErrorCode) noexcept;
 const char* toString(Gender) noexcept;
 const char* toString(DeliveryStatus) noexcept;
 const char* toString(RequestState) noexcept;
+const char* toString(PeerStatus) noexcept;
 const char* toString(SignalBand) noexcept;
 const char* toString(TransportId) noexcept;
+const char* toString(RadioAvailability) noexcept;
 const char* toString(EventType) noexcept;
 
 std::optional<Gender>     genderFromString(const std::string&) noexcept;
@@ -161,7 +195,12 @@ enum class EnvelopeType : std::uint8_t {
     ChatAccept  = 2,
     ChatDecline = 3,
     ChatMessage = 4,
-    ChatRead    = 5
+    ChatRead    = 5,
+
+    /// An image. Added after the first five, which is exactly the case the CBOR
+    /// forward-compatibility rule exists for: a build that predates this skips
+    /// the envelope rather than crashing (see QtCborCodec's default branch).
+    ChatMedia   = 6
 };
 
 }  // namespace anytime::protocol

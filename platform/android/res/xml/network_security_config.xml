@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cleartext HTTP is allowed for the loopback address ONLY.
+
+    The UI reaches the C++ core over http://127.0.0.1:<port>/<token>/ (AD-03,
+    AD-08). Android 9+ blocks cleartext traffic by default — even to loopback —
+    so without this the WebView fails with net::ERR_CLEARTEXT_NOT_PERMITTED.
+
+    TLS on a loopback socket would add nothing: the traffic never leaves the
+    device, and the secret path prefix plus the loopback-only bind are what
+    protect it. Every other host keeps the platform default (HTTPS only).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

@@ -22,7 +22,10 @@ struct PacketToEncode {
     PeerId        recipient;         ///< leave null for broadcast
     ByteSpan      payload;
     ByteSpan      signature;         ///< optional; sets flags::kSigned when present
-    bool          pad       = false; ///< set for encrypted types
+    /// Sets flags::kPadded. The codec does not pad — the plaintext must already
+    /// have gone through padPlaintext() before encryption. The flag is how the
+    /// receiver knows to strip it.
+    bool          pad       = false;
 };
 
 class PacketCodec {

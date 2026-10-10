@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<!--
+    AnyTime Chat — Android manifest.
+
+    Qt fills the %%INSERT_*%% placeholders from CMake at package time; the
+    version code/name come from PROJECT_VERSION in the root CMakeLists.
+
+    Permission set is documented in docs/ARCHITECTURE.md section 14. The split
+    below is not optional: Qt 6.11 targets minSdk 28, and the BLUETOOTH_SCAN /
+    ADVERTISE / CONNECT permissions only exist from API 31. On 28-30 the legacy
+    BLUETOOTH pair plus ACCESS_FINE_LOCATION are what actually grant scanning.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto"
+    android:versionCode="-- %%INSERT_VERSION_CODE%% --"
+    android:versionName="-- %%INSERT_VERSION_NAME%% --">
+
+    <!-- ── Bluetooth: API 31+ ──────────────────────────────────────────────
+         neverForLocation is what lets a chat app avoid asking for location.
+         We do not derive position from scan results, so we are entitled to
+         declare it — and the location prompt is a real cause of install
+         abandonment for an app that has no business knowing where you are. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"
+        tools:targetApi="31" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
+        tools:targetApi="31" />
+
+    <!-- ── Bluetooth: API 28-30 ────────────────────────────────────────────
+         The old model had no way to scan without location permission. There is
+         no flag that changes that on these releases; the only alternative would
+         be raising minSdk to 31 and dropping a large share of devices. -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="32" />
+
+    <!-- LOCATION, AND WHY ITS CEILING MOVED FROM 30 TO 32.
+         BLE scanning alone avoids location entirely from API 31 via
+         neverForLocation. Nearby Connections does NOT: below API 33 it requires
+         ACCESS_FINE_LOCATION outright, with no equivalent flag.
+
+         So adding Nearby costs a location prompt for users on API 31-32 who
+         previously never saw one. It is capped at 32 rather than left unbounded
+         so that API 33+ — the large majority — still never sees it, and it is
+         requested only when the user first sends a photo rather than at launch,
+         so declining it costs them nothing but fast photos. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"
+        android:maxSdkVersion="32" />
+
+    <!-- ── Nearby Connections: the bulk transport for photos ───────────────
+         NEARBY_WIFI_DEVICES replaces the location requirement from API 33, and
+         neverForLocation is what makes that swap worth having — we route bytes
+         over Wi-Fi Direct and never derive position from it. -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="33" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- ── Keeping the mesh alive ──────────────────────────────────────────
+         The C++ core lives in this process. Without a foreground service the
+         process is killed when the user leaves the app, and the mesh dies with
+         it — no announces, no inbound requests. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE"
+        tools:targetApi="34" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"
+        tools:targetApi="33" />
+
+    <!-- ── INTERNET, in an offline app ─────────────────────────────────────
+         Looks wrong; is required. Android gates socket() behind this permission
+         even for 127.0.0.1, and the UI reaches the C++ core over a loopback
+         HTTP server (AD-03/AD-08). Nothing here ever talks to a network: the
+         server binds LocalHost only and refuses non-loopback peers. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- BLE is the whole product, so a device without it cannot run this app. -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
+    <application
+        android:name="org.qtproject.qt.android.bindings.QtApplication"
+        android:label="-- %%INSERT_APP_NAME%% --"
+        android:icon="-- %%INSERT_APP_ICON%% --"
+        android:hardwareAccelerated="true"
+        android:allowBackup="false"
+        android:fullBackupOnly="false"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:enableOnBackInvokedCallback="false">
+
+        <!--
+            AnyTimeActivity — a QtActivity subclass, for ONE reason.
+
+            Qt's WebView does not override WebChromeClient.onShowFileChooser, so
+            <input type="file"> is silently inert: tapping it fires no intent at
+            all. AnyTimeActivity replaces the chrome client to fix that, and
+            nothing else.
+
+            It installs NO JavaScript bridge. FunMeet subclasses QtActivity for
+            both the file chooser and addJavascriptInterface; we need only the
+            first, because the page authenticates by knowing its secret URL and
+            reaches the core over ordinary loopback HTTP (AD-03 / AD-08). A
+            bridge would be a second, weaker path into the core — keep it out.
+
+            allowBackup is false because the identity key file lives in app
+            storage and is not yet Keystore-wrapped; letting it into a cloud
+            backup would put the device's private key somewhere we do not
+            control. Revisit once section 10's at-rest work lands.
+        -->
+        <activity
+            android:name="com.anytimechat.AnyTimeActivity"
+            android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
+            android:label="-- %%INSERT_APP_NAME%% --"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/AppTheme"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <meta-data android:name="android.app.lib_name"
+                android:value="-- %%INSERT_APP_LIB_NAME%% --" />
+            <meta-data android:name="android.app.arguments"
+                android:value="-- %%INSERT_APP_ARGUMENTS%% --" />
+        </activity>
+
+        <!-- Holds the process open so the mesh survives the app being
+             backgrounded. Contains no protocol logic — see section 11. -->
+        <service
+            android:name="com.anytimechat.MeshForegroundService"
+            android:foregroundServiceType="connectedDevice"
+            android:exported="false" />
+
+        <!-- Qt's own file provider. Referenced by the Qt templates; harmless if
+             unused, but its absence breaks packaging. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.qtprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/qtprovider_paths" />
+        </provider>
+    </application>
+</manifest>

@@ -55,6 +55,12 @@ public:
     /// contact); pass nullptr for a first contact, where XX learns it in-band.
     virtual Outcome<std::unique_ptr<ISecureSession>> createSession(
         const PublicKey* remoteStatic) = 0;
+
+    /// True when `message` opens a handshake — what a peer sends when it starts
+    /// over. SessionManager uses it to spot a peer that restarted (and lost its
+    /// session) and two peers that started at the same moment, without having
+    /// to know which handshake pattern is in use.
+    virtual bool isHandshakeInitiation(ByteSpan message) const = 0;
 };
 
 }  // namespace anytime

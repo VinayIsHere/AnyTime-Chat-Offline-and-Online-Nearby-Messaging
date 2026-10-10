@@ -1,0 +1,118 @@
+// platform/android/build.gradle
+//
+// Custom Gradle build for the Android package.
+//
+// Mirrors Qt 6.11's auto-generated template so Qt's plugin setup, JAR linking
+// and gradle.properties variables all keep working, and adds the one dependency
+// our Java layer needs.
+//
+// The variables referenced below — androidBuildToolsVersion, androidCompileSdkVersion,
+// androidNdkVersion, qtAndroidDir, qtGradlePluginType, qtMinSdkVersion,
+// qtTargetSdkVersion, qtTargetAbiList, legacyPackaging, androidPackageName — are
+// written into gradle.properties by androiddeployqt at package time. Do not
+// hard-code them; editing them by hand breaks the build.
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        //noinspection AndroidGradlePluginVersion
+        classpath 'com.android.tools.build:gradle:9.0.0'
+        // Qt 6.11 ships some Kotlin sources of its own, so the plugin is
+        // required even though this project contains no Kotlin.
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0"
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+apply plugin: qtGradlePluginType
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+
+    // NotificationCompat, for the foreground-service notification.
+    //noinspection GradleDependency
+    implementation 'androidx.core:core:1.17.0'
+
+    // Nearby Connections — the BULK transport for photos only (§06).
+    //
+    // THIS IS THE ONE DEPENDENCY WITH A REAL COST, so be deliberate about it:
+    // it pulls in Google Play Services, which does not exist on de-Googled
+    // devices (GrapheneOS, LineageOS without GApps, Huawei) — an audience that
+    // overlaps uncomfortably with people who want an offline mesh messenger.
+    //
+    // That is precisely why BLE stays the PRIMARY transport and this is
+    // secondary: where Play Services is absent, NearbyConnectionsTransport
+    // reports itself unavailable, RoutingPolicy stops selecting it, and photos
+    // fall back to BLE. Discovery, handshakes, presence and text never touch
+    // this library, so the app's core function keeps working without it.
+    //noinspection GradleDependency
+    implementation 'com.google.android.gms:play-services-nearby:19.3.0'
+}
+
+android {
+    namespace = androidPackageName
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion androidBuildToolsVersion
+    ndkVersion = androidNdkVersion
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            kotlin.srcDirs = [qtAndroidDir + '/src', 'src', 'kotlin']
+            aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qtAndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
+            renderscript.srcDirs = ['src']
+
+            // The React bundle is staged here by the copy_ui_assets CMake target
+            // and served from assets:/www by the local HTTP server.
+            assets.srcDirs = ['assets']
+
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.incremental = true
+        options.compilerArgs += ['-Xlint:all']
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lintOptions {
+        abortOnError = false
+    }
+
+    aaptOptions {
+        // Qt binary resources must not be compressed.
+        noCompress 'rcc'
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = legacyPackaging
+        }
+    }
+
+    defaultConfig {
+        resConfig "en"
+        minSdkVersion qtMinSdkVersion
+        targetSdkVersion qtTargetSdkVersion
+        ndk.abiFilters = qtTargetAbiList.split(",")
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}

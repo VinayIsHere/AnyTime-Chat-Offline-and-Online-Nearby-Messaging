@@ -24,6 +24,8 @@
 
 #include "core/ports/IRepositories.h"
 
+class QSqlQuery;
+
 namespace anytime {
 class IClock;
 }
@@ -42,7 +44,8 @@ public:
 class SqliteStore final : public IAccountRepository,
                           public IContactRepository,
                           public IMessageRepository,
-                          public IOutbox {
+                          public IOutbox,
+                          public ITransactionScope {
 public:
     SqliteStore(QString databasePath, IDataCipher&, IClock&);
     ~SqliteStore() override;
@@ -53,6 +56,9 @@ public:
 
     /// Current user_version. Migrations are forward-only and idempotent.
     int schemaVersion() const;
+
+    // ── ITransactionScope ────────────────────────────────────────────────────
+    Result runInTransaction(const std::function<Result()>& work) override;
 
     /// Panic wipe — drops every table and vacuums.
     Result wipeAll();
@@ -72,6 +78,7 @@ public:
     Outcome<std::vector<Contact>>   listContacts() override;
     Result                          setBlocked(const PeerId&, bool) override;
     bool                            isBlocked(const PeerId&) override;
+    Outcome<std::vector<BlockedPeer>> listBlocked() override;
     Result                          saveRequest(const Request&) override;
     Outcome<std::optional<Request>> findRequest(const RequestId&) override;
     Outcome<std::vector<Request>>   listRequests(Direction, RequestState) override;
@@ -89,6 +96,8 @@ public:
     Outcome<MessagePage>         page(const ChatId&, const Cursor&, int) override;
     Outcome<std::optional<Message>> findMessage(const MessageId&) override;
     Outcome<std::optional<Message>> findByClientId(const ClientMessageId&) override;
+    Result                          putMedia(const std::string&, ByteSpan) override;
+    Outcome<ByteBuffer>             getMedia(const std::string&) override;
 
     // IOutbox
     Result                             enqueue(const OutboxEntry&) override;
@@ -99,6 +108,11 @@ public:
     Outcome<std::vector<OutboxEntry>>  reapExpired(Timestamp) override;
 
 private:
+    /// Row readers. Both decrypt, so they are members rather than free functions
+    /// — they need the cipher held in Impl.
+    Message     readMessage(QSqlQuery&);
+    OutboxEntry readOutbox(QSqlQuery&, const PeerId&);
+
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

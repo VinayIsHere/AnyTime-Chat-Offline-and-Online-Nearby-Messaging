@@ -119,7 +119,19 @@ struct Message {
     Timestamp deliveredAt = kNoTimestamp;
     Timestamp readAt      = kNoTimestamp;
 
-    bool isMine() const { return direction == Direction::Outgoing; }
+    // ── Media ────────────────────────────────────────────────────────────────
+    //
+    // An image message carries a REFERENCE here, never the bytes. History paging
+    // reads every column of every row it returns, so an inlined image would make
+    // opening a chat load megabytes it is not going to display. `body` is the
+    // caption for a media message.
+
+    std::string mediaId;        ///< key into the media store; empty for text
+    std::string mediaMimeType;  ///< "image/jpeg" or "image/png"
+    std::size_t mediaBytes = 0; ///< so the UI can size a placeholder before fetching
+
+    bool isMine()  const { return direction == Direction::Outgoing; }
+    bool isMedia() const { return !mediaId.empty(); }
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,6 +146,15 @@ struct OutboxEntry {
     int        attempts      = 0;
     Timestamp  nextAttemptAt = kNoTimestamp;
     Timestamp  expiresAt     = kNoTimestamp;
+
+    /// Which class of transport this envelope wants (§06).
+    ///
+    /// PERSISTED, and that is the point: the decision belongs to whoever composed
+    /// the message — a photo is Bulk, a line of text is Text — and it has to
+    /// survive the app being killed. Re-deriving it at send time from the packet
+    /// type cannot work, because every app payload is a NoiseMessage by then and
+    /// the distinction has already been lost.
+    PayloadClass payloadClass = PayloadClass::Text;
 };
 
 }  // namespace anytime

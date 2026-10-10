@@ -49,7 +49,7 @@ public:
     // Without anytime:: these silently fail to override IEventSink.
     void onRequestReceived(const anytime::Request&) override;
     void onRequestAccepted(const anytime::Request&, const Chat&) override;
-    void onRequestDeclined(const RequestId&) override;
+    void onRequestDeclined(const RequestId&, const PeerId&) override;
     void onMessageReceived(const Message&) override;
     void onMessageStatusChanged(const MessageId&, DeliveryStatus) override;
     void onRadioStateChanged(bool available, const std::string& detail) override;

@@ -1,6 +1,7 @@
 // core/domain/constants/DiscoveryConstants.h
 //
-// Peer liveness and signal banding (docs/ARCHITECTURE.md section 11).
+// Peer liveness, link initiation and signal banding (docs/ARCHITECTURE.md
+// section 11).
 //
 // LIVENESS COMES FROM ANNOUNCES, NOT LINK EVENTS. BLE connection callbacks are
 // unreliable on every platform — iOS only infers that a central connected once
@@ -23,6 +24,26 @@ inline constexpr Timestamp kPeerSweepIntervalMillis = 5LL * 1000;
 
 /// Peers not seen for this long are dropped from storage entirely.
 inline constexpr Timestamp kPeerPruneAfterMillis = 7LL * 24 * 60 * 60 * 1000;
+
+// ── Link initiation ──────────────────────────────────────────────────────────
+//
+// Both devices in a pair see each other, and if both connected there would be
+// two links per pair — double the radio time, and on BLE a real chance the
+// stack refuses the second. So the LOWER peer id opens the link and the other
+// waits. The wait is bounded because radio visibility is not always symmetric:
+// a lower peer that cannot see us must not leave the pair unconnected forever.
+
+/// How long the higher-id peer waits for the lower one before connecting itself.
+inline constexpr Timestamp kLinkInitiationGraceMillis = 10LL * 1000;
+
+/// Minimum gap between link attempts to one peer, so a peer that keeps
+/// advertising but never accepts is not hammered with connection attempts.
+inline constexpr Timestamp kLinkRetryMillis = 3LL * 1000;
+
+/// While any transport is down — Bluetooth off, or the permission dialog still
+/// on screen — how often AppCore tries to start it again. Without this, granting
+/// the permission did nothing until the app was restarted.
+inline constexpr Timestamp kTransportRetryMillis = 3LL * 1000;
 
 // ── RSSI banding ─────────────────────────────────────────────────────────────
 //

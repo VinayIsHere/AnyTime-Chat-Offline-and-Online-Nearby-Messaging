@@ -20,7 +20,8 @@ export interface EventMap {
   'peer.lost': { peerId: string };
   'request.received': ChatRequest;
   'request.accepted': { request: ChatRequest; chat: ChatSummary };
-  'request.declined': { id: string };
+  /** `peerId` travels with the id so the Nearby screen knows which peer to re-offer. */
+  'request.declined': { id: string; peerId: string };
   'message.received': Message;
   'message.status': { id: string; status: DeliveryStatus };
   'radio.state': { available: boolean; detail: string };

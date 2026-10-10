@@ -29,6 +29,23 @@ public:
     /// Verifies a peer's announce signature against their claimed signing key.
     virtual bool verify(ByteSpan message, const Signature&, const PublicKey& signingKey) = 0;
 
+    /// X25519 shared secret between our static key and theirs.
+    ///
+    /// This is how the Noise handshake performs its two static DH operations
+    /// without the secret key ever leaving the store. Implementations MUST
+    /// reject a degenerate (all-zero) result, which indicates a low-order peer
+    /// key rather than a real one.
+    virtual Outcome<std::array<Byte, 32>> agree(const PublicKey& theirStatic) = 0;
+
+    /// The PeerId a static public key maps to: SHA-256(key)[0..8] (AD-05).
+    ///
+    /// The sender field of a packet is just bytes anyone can write. This is how
+    /// the core checks that an announce, or a completed handshake, really
+    /// belongs to the peer id it claims. Without the check a spoofed announce
+    /// could claim someone else's link, or a handshake could put an attacker's
+    /// key behind a contact's id.
+    virtual PeerId peerIdFor(const PublicKey& staticKey) const = 0;
+
     /// Panic wipe — destroys the identity and the at-rest data key. Irreversible.
     virtual Result wipe() = 0;
 };

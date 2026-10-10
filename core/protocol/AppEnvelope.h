@@ -40,6 +40,22 @@ struct ChatReadPayload {
     ClientMessageId clientMessageId;
 };
 
+/// An image, carried whole inside one envelope.
+///
+/// The bytes are the FINAL encoded image — the UI downscales and re-encodes
+/// before upload, so nothing above kMaxMediaBytes ever reaches the protocol.
+/// Whole-buffer rather than streamed: it keeps the existing
+/// encrypt -> fragment -> reassemble path unchanged, at the cost of holding the
+/// image in memory twice during send. Video will need a streaming design and is
+/// deliberately out of scope for v1.
+struct ChatMediaPayload {
+    ClientMessageId clientMessageId;
+    std::string     mimeType;  ///< "image/jpeg" or "image/png"
+    std::string     caption;   ///< optional, capped at kMaxCaptionChars
+    ByteBuffer      bytes;
+    Timestamp       sentAt = kNoTimestamp;
+};
+
 /// A decoded envelope. Exactly one payload member is populated, per `type`.
 struct AppEnvelope {
     EnvelopeType type = EnvelopeType::ChatMessage;
@@ -48,6 +64,7 @@ struct AppEnvelope {
     std::optional<ChatAcceptPayload>  accept;
     std::optional<ChatMessagePayload> message;
     std::optional<ChatReadPayload>    read;
+    std::optional<ChatMediaPayload>   media;
 };
 
 /// CBOR serialisation, implemented in adapters/codec over QCborStreamWriter.

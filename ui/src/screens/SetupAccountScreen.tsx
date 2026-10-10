@@ -5,16 +5,13 @@ import { Check, ChevronLeft, ShieldCheck } from 'lucide-react';
 import Screen from '../components/Screen';
 import { colors, motion, shadow } from '../theme/theme';
 import { api, ApiError, type Gender } from '../api/client';
+import { isValidUsername, sanitizeUsername, USERNAME_HINT } from '../config/username';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const GENDERS: Gender[] = ['Male', 'Female', 'Other', 'Prefer not to say'];
 
 // Mirrors core/domain/constants/RequestConstants.h — keep the two in step.
-const MIN_USERNAME = 3;
-const MAX_USERNAME = 20;
 const MIN_AGE = 13;
-
-const USERNAME_RE = new RegExp(`^[a-z0-9_]{${MIN_USERNAME},${MAX_USERNAME}}$`);
 
 /**
  * Account creation. This single call generates the identity keypair — there is
@@ -36,7 +33,7 @@ export default function SetupAccountScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const usernameValid = USERNAME_RE.test(username);
+  const usernameValid = isValidUsername(username);
   const usernameTouched = username.length > 0;
   const age = ageFrom(day, month, year);
   const dobComplete = Boolean(day && month && year.length === 4);
@@ -82,9 +79,7 @@ export default function SetupAccountScreen() {
               <span style={setupStyles.at}>@</span>
               <input
                 value={username}
-                onChange={(e) =>
-                  setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, MAX_USERNAME))
-                }
+                onChange={(e) => setUsername(sanitizeUsername(e.target.value))}
                 placeholder="username"
                 autoCapitalize="none"
                 autoCorrect="off"
@@ -102,7 +97,7 @@ export default function SetupAccountScreen() {
                 "@vinay·4f2a" on the Nearby screen later is not a surprise. */}
             <span style={setupStyles.helper}>
               {usernameTouched && !usernameValid
-                ? `${MIN_USERNAME}–${MAX_USERNAME} characters — letters, numbers and _`
+                ? USERNAME_HINT
                 : 'Names do not have to be unique. A short code is added so people can tell duplicates apart.'}
             </span>
           </label>
@@ -201,10 +196,10 @@ function ageFrom(day: string, month: string, year: string): number | null {
 }
 
 const setupStyles: Record<string, React.CSSProperties> = {
-  header: { display: 'flex', alignItems: 'center', gap: 14, padding: '18px 22px 0', flex: 'none' },
+  header: { display: 'flex', alignItems: 'center', gap: 14, padding: '14px 22px 0', flex: 'none' },
   back: { width: 38, height: 38, borderRadius: 12, border: '1px solid ' + colors.borderStrong, background: colors.surface, color: colors.text, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'background ' + motion.fast },
   headerLabel: { fontSize: 13, fontWeight: 700, color: colors.text50 },
-  body: { flex: 1, overflowY: 'auto', padding: '28px 28px 0' },
+  body: { flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '24px 22px 0' },
   title: { margin: 0, fontSize: 27, fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.02em' },
   sub: { margin: '9px 0 0', fontSize: 14, fontWeight: 500, lineHeight: 1.5, color: colors.textMuted },
   fields: { marginTop: 26, display: 'flex', flexDirection: 'column', gap: 18 },
@@ -218,15 +213,18 @@ const setupStyles: Record<string, React.CSSProperties> = {
   at: { fontSize: 15, fontWeight: 600, color: colors.text35 },
   bare: { flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: colors.text, fontSize: 15, fontWeight: 600, fontFamily: 'inherit' },
   ok: { display: 'flex', alignItems: 'center', color: colors.success, flex: 'none' },
-  dobRow: { display: 'flex', gap: 10 },
-  dobCell: { height: 54, borderRadius: 14, background: colors.surface, border: '1px solid ' + colors.border, color: colors.text, fontSize: 15, fontWeight: 600, fontFamily: 'inherit', textAlign: 'center', outline: 'none' },
+  dobRow: { display: 'flex', gap: 8 },
+  // width 0 + minWidth 0: an <input> has a large intrinsic width (~20 chars),
+  // which flex items refuse to shrink below — that pushed YYYY off-screen.
+  dobCell: { width: 0, minWidth: 0, boxSizing: 'border-box', padding: '0 6px', height: 54, borderRadius: 14, background: colors.surface, border: '1px solid ' + colors.border, color: colors.text, fontSize: 15, fontWeight: 600, fontFamily: 'inherit', textAlign: 'center', outline: 'none' },
   chips: { display: 'flex', flexWrap: 'wrap', gap: 9 },
   chip: { padding: '11px 17px', borderRadius: 13, background: colors.surface, border: '1px solid ' + colors.borderStrong, color: colors.text70, fontSize: 13.5, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', transition: 'background ' + motion.fast + ', color ' + motion.fast },
   chipActive: { background: colors.accent, border: '1px solid ' + colors.accent, color: colors.white, fontWeight: 700 },
   note: { display: 'flex', gap: 12, padding: '14px 16px', borderRadius: 16, background: colors.accentSoft, border: '1px solid ' + colors.accentBorder },
   noteText: { margin: 0, fontSize: 12.5, fontWeight: 500, lineHeight: 1.55, color: colors.text60 },
   error: { fontSize: 12, fontWeight: 600, color: colors.danger },
-  footer: { flex: 'none', padding: '16px 28px 30px', background: colors.fade },
+  // Owns the bottom safe-area inset itself — Screen no longer pads for it.
+  footer: { flex: 'none', padding: '12px 22px 0', paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', background: colors.fade },
   cta: { width: '100%', height: 56, border: 0, borderRadius: 16, background: colors.accent, color: colors.white, fontSize: 15.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', boxShadow: shadow.accent, transition: 'background ' + motion.fast },
   ctaDisabled: { background: colors.fillSoft, color: colors.textFaint, boxShadow: 'none', cursor: 'not-allowed' },
 };

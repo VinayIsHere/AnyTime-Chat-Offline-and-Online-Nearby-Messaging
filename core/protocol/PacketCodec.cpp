@@ -8,16 +8,11 @@
 #include "core/protocol/PacketCodec.h"
 
 #include <cstring>
+#include <iterator>
 
 namespace anytime::protocol {
 
 namespace {
-
-void appendU16(ByteBuffer& out, std::uint16_t v)
-{
-    out.push_back(static_cast<Byte>((v >> 8) & 0xFF));
-    out.push_back(static_cast<Byte>(v & 0xFF));
-}
 
 void appendU32(ByteBuffer& out, std::uint32_t v)
 {
@@ -25,11 +20,6 @@ void appendU32(ByteBuffer& out, std::uint32_t v)
     out.push_back(static_cast<Byte>((v >> 16) & 0xFF));
     out.push_back(static_cast<Byte>((v >> 8) & 0xFF));
     out.push_back(static_cast<Byte>(v & 0xFF));
-}
-
-std::uint16_t readU16(ByteSpan s, std::size_t offset)
-{
-    return static_cast<std::uint16_t>((static_cast<std::uint16_t>(s[offset]) << 8) | s[offset + 1]);
 }
 
 std::uint32_t readU32(ByteSpan s, std::size_t offset)
@@ -62,7 +52,38 @@ std::size_t paddedSizeFor(std::size_t plaintextSize) noexcept
     for (const std::size_t bucket : kPaddingBuckets) {
         if (plaintextSize <= bucket) return bucket;
     }
-    return plaintextSize;  // larger than the biggest bucket: send at natural length
+    // Larger than the biggest bucket — a photo. Round up to a multiple of it
+    // rather than sending at natural length, which would publish the exact
+    // byte count of every image.
+    constexpr std::size_t step = kPaddingBuckets[std::size(kPaddingBuckets) - 1];
+    return ((plaintextSize + step - 1) / step) * step;
+}
+
+ByteBuffer padPlaintext(ByteSpan plaintext)
+{
+    const std::size_t total = paddedSizeFor(kPaddingLengthPrefixBytes + plaintext.size());
+
+    ByteBuffer out;
+    out.reserve(total);
+    appendU32(out, static_cast<std::uint32_t>(plaintext.size()));
+    out.insert(out.end(), plaintext.begin(), plaintext.end());
+    out.resize(total, 0);  // zeros are safe: they are encrypted with the rest
+    return out;
+}
+
+Result unpadPlaintext(ByteSpan padded, ByteBuffer& plaintext)
+{
+    if (padded.size() < kPaddingLengthPrefixBytes) {
+        return Result::error(ErrorCode::MalformedPacket, "Padded plaintext has no length.");
+    }
+    const std::size_t length = readU32(padded, 0);
+    if (length > padded.size() - kPaddingLengthPrefixBytes) {
+        return Result::error(ErrorCode::MalformedPacket,
+                             "Declared plaintext length exceeds the padded buffer.");
+    }
+    const auto begin = padded.begin() + kPaddingLengthPrefixBytes;
+    plaintext.assign(begin, begin + static_cast<std::ptrdiff_t>(length));
+    return Result::ok();
 }
 
 std::size_t PacketCodec::encodedSize(const PacketToEncode& p) noexcept
@@ -76,9 +97,12 @@ std::size_t PacketCodec::encodedSize(const PacketToEncode& p) noexcept
 
 Result PacketCodec::encode(const PacketToEncode& p, ByteBuffer& out)
 {
-    if (p.payload.size() > 0xFFFF) {
+    // Bounded by what a receiver will ever reassemble, not by the width of the
+    // length field. Encoding something larger would only produce a packet the
+    // far side is obliged to discard.
+    if (p.payload.size() > kMaxReassembledBytes) {
         return Result::error(ErrorCode::InvalidArgument,
-                             "Payload exceeds the 16-bit length field.");
+                             "Payload exceeds the reassembly limit.");
     }
     if (!p.signature.empty() && p.signature.size() != kSignatureBytes) {
         return Result::error(ErrorCode::InvalidArgument, "Signature must be 64 bytes.");
@@ -105,7 +129,7 @@ Result PacketCodec::encode(const PacketToEncode& p, ByteBuffer& out)
         out.insert(out.end(), recipient.begin(), recipient.end());
     }
 
-    appendU16(out, static_cast<std::uint16_t>(p.payload.size()));
+    appendU32(out, static_cast<std::uint32_t>(p.payload.size()));
     out.insert(out.end(), p.payload.begin(), p.payload.end());
 
     if (!p.signature.empty()) out.insert(out.end(), p.signature.begin(), p.signature.end());
@@ -156,8 +180,15 @@ Result PacketCodec::decode(ByteSpan frame, Packet& packet)
     if (frame.size() < offset + kPayloadLengthBytes) {
         return Result::error(ErrorCode::MalformedPacket, "Missing payload length.");
     }
-    const std::size_t payloadLength = readU16(frame, offset);
+    const std::size_t payloadLength = readU32(frame, offset);
     offset += kPayloadLengthBytes;
+
+    // Refuse an absurd declared length up front. The bounds check below would
+    // catch it anyway, but a hostile peer should not get to name a number this
+    // code then carries around in arithmetic.
+    if (payloadLength > kMaxReassembledBytes) {
+        return Result::error(ErrorCode::MalformedPacket, "Declared payload length is implausible.");
+    }
 
     const std::size_t signatureLength = packet.isSigned() ? kSignatureBytes : 0;
 

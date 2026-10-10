@@ -24,8 +24,10 @@ Window {
         url: appRootUrl
 
         onLoadingChanged: function (loadRequest) {
+            // warn, not log: a UI that cannot load is a real failure, and debug
+            // lines are compiled out of release builds.
             if (loadRequest.status === WebView.LoadFailedStatus)
-                console.log("[AnyTime] UI failed to load:", loadRequest.errorString)
+                console.warn("[AnyTime] UI failed to load:", loadRequest.errorString)
             else if (loadRequest.status === WebView.LoadSucceededStatus)
                 console.log("[AnyTime] UI loaded")
         }

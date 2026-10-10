@@ -31,6 +31,7 @@
 #include "core/ports/IClock.h"
 #include "core/ports/IEventSink.h"
 #include "core/ports/IIdentityStore.h"
+#include "core/ports/IRadioController.h"
 #include "core/ports/IRepositories.h"
 #include "core/ports/ISecureSession.h"
 #include "core/ports/ITransport.h"
@@ -42,6 +43,7 @@
 #include "core/protocol/PacketCodec.h"
 
 #include "core/services/AccountService.h"
+#include "core/services/BlockService.h"
 #include "core/services/ChatService.h"
 #include "core/services/DeliveryService.h"
 #include "core/services/DiscoveryService.h"
@@ -53,6 +55,8 @@
 
 #include "core/AppCore.h"
 
+#include "core/log/Log.h"
+
 namespace anytime::header_check {
 
 // A few static assertions that pin down assumptions the protocol relies on.
@@ -63,8 +67,9 @@ static_assert(kPeerIdBytes == 8,
 static_assert(kPublicKeyBytes == 32, "X25519 and Ed25519 public keys are 32 bytes");
 static_assert(kSignatureBytes == 64, "Ed25519 signatures are 64 bytes");
 
-static_assert(protocol::kFixedHeaderBytes == 12,
-              "packet header geometry changed — update the codec and the docs");
+static_assert(protocol::kFixedHeaderBytes
+                  == 1 + 1 + 1 + 1 + 4 + kPeerIdBytes,
+              "fixed header is version+type+ttl+flags+timestamp+senderId");
 static_assert(protocol::kInitialTtl == 7, "initial TTL follows bitchat's figure");
 
 static_assert(sizeof(kRetryBackoffMillis) / sizeof(kRetryBackoffMillis[0])
@@ -79,5 +84,10 @@ static_assert(kRssiVeryStrongDbm > kRssiStrongDbm,
 
 static_assert(protocol::kFragmentPayloadBytes > protocol::kFragmentHeaderBytes,
               "a fragment must carry more payload than its own header");
+
+static_assert(kLinkRetryMillis < kLinkInitiationGraceMillis,
+              "the lower peer must get several attempts before the higher one steps in");
+static_assert(protocol::kHandshakeTimeoutMillis < kPeerReachableWindow,
+              "a stalled handshake must be retried while the peer is still considered present");
 
 }  // namespace anytime::header_check

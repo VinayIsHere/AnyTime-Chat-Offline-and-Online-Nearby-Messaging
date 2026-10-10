@@ -23,6 +23,19 @@ inline constexpr Timestamp kInboundRequestWindowMillis = 60LL * 60 * 1000;
 /// because it is unsolicited content shown before any trust decision.
 inline constexpr std::size_t kMaxGreetingChars = 140;
 
+/// How long an unanswered outgoing request stays un-resendable.
+///
+/// A plain decline comes back as a chat.decline envelope, so "they said no" is
+/// known explicitly. This covers the SILENT case instead — the peer ignored it,
+/// walked out of range, or was killed before it arrived. Without a cooldown the
+/// Nearby button would lock forever on a request that simply never lands, which
+/// on a flaky radio is common rather than exceptional.
+///
+/// Short on purpose: the cost of a duplicate is nil (the receiver already
+/// ignores duplicates), while the cost of a stuck button is a user who cannot
+/// reach someone standing next to them.
+inline constexpr Timestamp kRequestResendCooldownMillis = 60LL * 1000;
+
 /// Username validation (AD-05). Uniqueness is deliberately NOT checked — with no
 /// server there is no registry to check against.
 inline constexpr std::size_t kMinUsernameChars = 3;

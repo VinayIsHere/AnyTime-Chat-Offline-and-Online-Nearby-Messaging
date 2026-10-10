@@ -13,7 +13,7 @@ export default function ChatsScreen() {
 
   useEffect(() => { api.getChats().then(setChats).catch(() => setChats([])); }, []);
 
-  const shown = chats.filter((c) => c.handle.toLowerCase().includes(query.toLowerCase()));
+  const shown = chats.filter((c) => (c.handle ?? '').toLowerCase().includes(query.toLowerCase()));
 
   return (
     <Screen>
@@ -33,26 +33,35 @@ export default function ChatsScreen() {
         {shown.map((c) => (
           <div key={c.id} style={{ ...chatsStyles.row, opacity: c.reachable ? 1 : 0.62 }} onClick={() => navigate('/chats/' + c.id)}>
             <span style={chatsStyles.avatar}>
-              {(c.handle.replace('@', '').charAt(0) || '?').toUpperCase()}
+              {((c.handle ?? '').replace('@', '').charAt(0) || '?').toUpperCase()}
               <span style={{ ...chatsStyles.presence, background: c.reachable ? colors.success : colors.offline }} />
             </span>
             <span style={chatsStyles.rowText}>
               <span style={chatsStyles.rowTop}>
-                <span style={chatsStyles.name}>{c.handle}</span>
+                <span style={chatsStyles.name}>{c.handle || 'Unknown contact'}</span>
                 <span style={{ ...chatsStyles.time, color: c.unread ? colors.accentText : colors.text35 }}>{c.at}</span>
               </span>
               <span style={chatsStyles.rowBottom}>
-                <span style={chatsStyles.preview}>{c.lastMessage}</span>
+                <span style={chatsStyles.preview}>{c.lastMessage || 'No messages yet'}</span>
                 {c.unread > 0 && <span style={chatsStyles.unread}>{c.unread}</span>}
               </span>
             </span>
           </div>
         ))}
 
-        <div style={chatsStyles.empty}>
-          <Radar size={22} strokeWidth={1.9} color={colors.accentText} />
-          <p style={chatsStyles.emptyText}>Tap Nearby to find more people around you</p>
-        </div>
+        {/* Only when there is nothing above it. This used to render
+            unconditionally, so a real chat sat directly above a card telling the
+            user they had none. */}
+        {shown.length === 0 && (
+          <div style={chatsStyles.empty}>
+            <Radar size={22} strokeWidth={1.9} color={colors.accentText} />
+            <p style={chatsStyles.emptyText}>
+              {chats.length === 0
+                ? 'No chats yet. Tap Nearby to find people around you.'
+                : 'No chats match that search.'}
+            </p>
+          </div>
+        )}
       </div>
 
       <BottomNav />
@@ -68,7 +77,7 @@ const chatsStyles: Record<string, React.CSSProperties> = {
   searchWrap: { padding: '0 20px 12px', flex: 'none' },
   search: { display: 'flex', alignItems: 'center', gap: 10, height: 46, padding: '0 14px', borderRadius: 14, background: colors.surface, border: '1px solid ' + colors.border },
   searchInput: { flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: colors.text, fontSize: 14, fontWeight: 500, fontFamily: 'inherit' },
-  list: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' },
+  list: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', paddingBottom: 28 },
   row: { display: 'flex', alignItems: 'center', gap: 13, padding: '14px 22px', cursor: 'pointer', transition: 'background ' + motion.fast },
   avatar: { position: 'relative', width: 50, height: 50, borderRadius: 16, background: colors.avatar, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, flex: 'none' },
   presence: { position: 'absolute', right: -2, bottom: -2, width: 14, height: 14, borderRadius: '50%', border: '2.5px solid ' + colors.ring },
@@ -79,6 +88,8 @@ const chatsStyles: Record<string, React.CSSProperties> = {
   rowBottom: { display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' },
   preview: { fontSize: 13, fontWeight: 500, color: colors.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   unread: { minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: colors.accent, color: colors.white, fontSize: 11, fontWeight: 700, lineHeight: '20px', textAlign: 'center' },
-  empty: { margin: '22px 22px 0', padding: 18, borderRadius: 20, background: colors.fillSofter, border: '1px dashed rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, textAlign: 'center' },
+  // Themed border: the hard-coded translucent-white one was a dark-theme
+  // leftover and was invisible against the light background.
+  empty: { margin: '22px 22px 0', padding: 18, borderRadius: 20, background: colors.fillSofter, border: '1px dashed ' + colors.borderStrong, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9, textAlign: 'center' },
   emptyText: { margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.5, color: colors.text60 },
 };

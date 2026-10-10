@@ -5,10 +5,6 @@
 //
 // Read this file to understand the wiring; read docs/ARCHITECTURE.md section 04
 // to understand why it is shaped this way.
-//
-// MILESTONE STATE: sign-in and Nearby are implemented end to end. Messaging
-// still needs SQLite, real crypto and the BLE radio — the adapters marked below
-// are the ones that get replaced, and nothing above them changes.
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -30,12 +26,25 @@
 
 #include "adapters/clock/QtClock.h"
 #include "adapters/codec/QtCborCodec.h"
-#include "adapters/crypto/NullSessionFactory.h"
+#include "adapters/crypto/NoiseSessionFactory.h"
 #include "adapters/http/LocalHttpServer.h"
 #include "adapters/http/SseHub.h"
-#include "adapters/identity/DevIdentityStore.h"
+#include "adapters/identity/MonocypherIdentityStore.h"
+#include "adapters/logging/LogSetup.h"
 #include "adapters/persistence/settings/SettingsStore.h"
+#include "adapters/persistence/sqlite/MonocypherDataCipher.h"
+#include "adapters/persistence/sqlite/SqliteStore.h"
 #include "adapters/transport/loopback/LoopbackTransport.h"
+#include "core/log/Log.h"
+#include "core/protocol/Packet.h"
+#ifdef Q_OS_ANDROID
+#include "adapters/events/FanOutEventSink.h"
+#include "adapters/notify/AndroidNotificationPresenter.h"
+#include "adapters/notify/Notifier.h"
+#include "adapters/radio/AndroidRadioController.h"
+#include "adapters/transport/ble/BleGattTransport.h"
+#include "adapters/transport/nearby/NearbyConnectionsTransport.h"
+#endif
 #include "core/AppCore.h"
 
 using namespace anytime;
@@ -53,30 +62,73 @@ QString appDataDir(const QString& instance)
     return dir;
 }
 
-/// Qt's default handler on Windows routes to OutputDebugString when there is no
-/// attached console, so a redirected `> log.txt` captures nothing. Since the
-/// desktop build prints the URL you need in order to use the app at all, that
-/// silence is a usability bug rather than a cosmetic one.
-void writeToStdout(QtMsgType type, const QMessageLogContext&, const QString& message)
+/// One-time import of the account SettingsStore used to own.
+///
+/// SettingsStore kept the account in an INI file; SQLite owns it now. Without
+/// this, updating the app would be indistinguishable from being signed out —
+/// and because the PeerId is derived from the identity key rather than the
+/// account row, the user would keep their key but lose the profile attached to
+/// it. The INI is left in place rather than deleted, so a downgrade still works.
+void migrateLegacyAccount(const QString& iniPath, persistence::SqliteStore& store)
 {
-    const char* prefix = "";
-    switch (type) {
-        case QtWarningMsg:  prefix = "[warn] "; break;
-        case QtCriticalMsg: prefix = "[error] "; break;
-        case QtFatalMsg:    prefix = "[fatal] "; break;
-        default: break;
+    if (!QFile::exists(iniPath)) return;
+
+    auto existing = store.load();
+    if (existing.isError() || existing.value().has_value()) return;  // already migrated
+
+    persistence::SettingsStore legacy(iniPath);
+    auto account = legacy.load();
+    if (account.isError() || !account.value().has_value()) return;
+
+    if (const Result r = store.save(*account.value()); r.isError()) {
+        AT_LOG_ERROR("app", "could not migrate the legacy account: {}", r.message());
+        return;
     }
-    std::fputs(prefix, stdout);
-    std::fputs(qPrintable(message), stdout);
-    std::fputc('\n', stdout);
+    AT_LOG_INFO("app", "migrated the account from settings storage into SQLite");
+}
+
+#ifndef ANYTIME_USE_WEBVIEW
+/// Printed straight to stdout, NOT through the logger. The URL is the only way
+/// into the headless desktop app, and a Release build logs at critical only —
+/// routing this through spdlog would hide it from anyone running a release
+/// binary. It also keeps the secret token out of the log file.
+void printBanner(const QString& instance, const QString& url, const QString& urlFile,
+                 const QString& logFile)
+{
+    const auto line = [](const QString& text) {
+        std::fputs(("  |  " + text + QLatin1Char('\n')).toLocal8Bit().constData(), stdout);
+    };
+
+    std::fputs("\n  +--------------------------------------------------------------\n", stdout);
+    line(QStringLiteral("AnyTime Chat %1%2")
+             .arg(QStringLiteral(ANYTIME_VERSION),
+                  instance.isEmpty() ? QString() : QStringLiteral(" [instance %1]").arg(instance)));
+    line(QString());
+    line(QStringLiteral("Open this in a browser:"));
+    line(url);
+    line(QString());
+    line(QStringLiteral("Second instance:  anytime --instance b"));
+    line(QString());
+    line(QStringLiteral("URL also written to:"));
+    line(urlFile);
+    if (!logFile.isEmpty()) {
+        line(QString());
+        line(QStringLiteral("Log file (level: %1):")
+                 .arg(QString::fromStdString(logging::compiledLevelName())));
+        line(logFile);
+    }
+    std::fputs("  +--------------------------------------------------------------\n\n", stdout);
     std::fflush(stdout);
 }
+#endif
 
 }  // namespace
 
 int main(int argc, char* argv[])
 {
-    qInstallMessageHandler(writeToStdout);
+    // First, so nothing Qt prints during start-up bypasses the logger. Until
+    // initialise() runs below, spdlog's default console logger catches it.
+    logging::installQtMessageBridge();
 
 #ifdef ANYTIME_USE_WEBVIEW
     QtWebView::initialize();
@@ -100,34 +152,90 @@ int main(int argc, char* argv[])
     const QString instance = parser.value(instanceOption);
     const QString dataDir = appDataDir(instance);
 
+    // ── Logging ──────────────────────────────────────────────────────────────
+    // Console (logcat on Android) plus a rotating file under the data directory.
+    // The level is fixed at compile time — see ANYTIME_RELEASE_LOG_LEVEL in
+    // CMakeLists.txt.
+
+    logging::LogConfig logConfig;
+    logConfig.directory = dataDir + QStringLiteral("/logs");
+    logging::initialise(logConfig);
+
+    AT_LOG_INFO("app", "AnyTime Chat {} starting{}", ANYTIME_VERSION,
+                instance.isEmpty() ? std::string() : " [instance " + instance.toStdString() + "]");
+    AT_LOG_DEBUG("app", "data directory: {}", dataDir.toStdString());
+
     // ── Adapters ─────────────────────────────────────────────────────────────
     // main() owns these; AppCore borrows them and never outlives them.
 
     platform::QtClock clock;
 
-    // TEMPORARY (see the header): not real cryptography. Replaced by the
-    // libsodium-backed store in the crypto milestone.
-    identity::DevIdentityStore identityStore(dataDir + QStringLiteral("/identity.key"));
+    // Real Ed25519 signatures and X25519 keys, via vendored Monocypher.
+    // Secret keys are still plaintext on disk — Keystore wrapping is outstanding.
+    identity::MonocypherIdentityStore identityStore(dataDir + QStringLiteral("/identity.key"));
 
-    // TEMPORARY: account persists, peers are RAM-only. SQLite lands with messaging.
-    persistence::SettingsStore store(dataDir + QStringLiteral("/anytime.ini"));
+    // Durable storage (section 12): WAL, forward-only migrations, and message
+    // bodies plus outbox payloads encrypted at rest. This replaced SettingsStore,
+    // which kept everything but the account in RAM — chat history that vanished
+    // on restart is not chat history.
+    persistence::MonocypherDataCipher dataCipher(dataDir + QStringLiteral("/data.key"));
+    if (const Result r = dataCipher.loadOrCreate(); r.isError()) {
+        // Refusing to start beats starting with unreadable history: carrying on
+        // would silently render every stored message blank.
+        AT_LOG_CRITICAL("app", "at-rest data key unavailable: {}", r.message());
+        logging::shutdown();
+        return 1;
+    }
 
-    codec::QtCborCodec        cbor;
-    crypto::NullSessionFactory sessionFactory;
-    http::SseHub               sseHub;
+    persistence::SqliteStore store(dataDir + QStringLiteral("/anytime.db"), dataCipher, clock);
+    if (const Result r = store.open(); r.isError()) {
+        AT_LOG_CRITICAL("app", "database unavailable: {}", r.message());
+        logging::shutdown();
+        return 1;
+    }
+
+    migrateLegacyAccount(dataDir + QStringLiteral("/anytime.ini"), store);
+
+    codec::QtCborCodec          cbor;
+    crypto::NoiseSessionFactory sessionFactory(identityStore);
+    http::SseHub                sseHub;
+
+#ifdef Q_OS_ANDROID
+    // Switching the radio ON, which is a separate concern from carrying bytes
+    // over it — see core/ports/IRadioController.h. Desktop leaves deps.radio
+    // null on purpose: there is no radio to switch, and the API then reports
+    // "unsupported" so the UI knows not to gate anything.
+    radio::AndroidRadioController radioController;
+
+    // Notifications for someone who has left the app. The core still emits each
+    // event once; the fan-out hands it to the page (SSE) AND to the notifier.
+    // Desktop has no notifier: the app is the window, and a developer running
+    // two instances side by side does not want each pinging the other.
+    notify::AndroidNotificationPresenter notificationPresenter;
+    notify::Notifier                     notifier(store, store, notificationPresenter);
+    events::FanOutEventSink              eventSink{&sseHub, &notifier};
+#endif
 
     // ── Core ─────────────────────────────────────────────────────────────────
 
     AppCoreDeps deps;
     deps.accounts = &store;
     deps.contacts = &store;
-    deps.messages = nullptr;   // messaging milestone
-    deps.outbox   = nullptr;   // messaging milestone
+    deps.messages = &store;
+    deps.outbox   = &store;
+    deps.transactions = &store;
     deps.identity = &identityStore;
     deps.sessions = &sessionFactory;
     deps.cbor     = &cbor;
-    deps.events   = &sseHub;   // core emits domain events -> SSE frames
+#ifdef Q_OS_ANDROID
+    deps.events   = &eventSink;  // -> SSE frames for the page, and notifications
+#else
+    deps.events   = &sseHub;     // core emits domain events -> SSE frames
+#endif
     deps.clock    = &clock;
+#ifdef Q_OS_ANDROID
+    deps.radio    = &radioController;
+#endif
 
     AppCore core(deps);
 
@@ -135,12 +243,49 @@ int main(int argc, char* argv[])
     // AD-07: loopback is a shipped adapter, not a test double. It is the only
     // transport on desktop, because we deliberately never write a desktop radio.
 
+#ifdef Q_OS_ANDROID
+    // The real radio. BleRadio.java owns the GATT plumbing; everything about
+    // what the bytes MEAN stays in core/ (section 11).
+    transport::BleConfig bleConfig;
+    bleConfig.serviceUuid = QString::fromLatin1(protocol::kServiceUuid);
+    bleConfig.frameSize = protocol::kFragmentPayloadBytes;
+    core.addTransport(std::make_unique<transport::BleGattTransport>(bleConfig));
+
+    // ── Nearby Connections: the BULK transport, registered CONDITIONALLY ─────
+    //
+    // Registered only when Play Services is actually present, and that ordering
+    // is load-bearing rather than tidy. TransportRegistry::allAvailable() is
+    // true only when EVERY registered transport reports itself usable, and
+    // AppCore retries transports every kTransportRetryMillis until it is. So
+    // registering a permanently dead Nearby on a de-Googled phone would spin
+    // that retry every three seconds for the life of the process — a battery
+    // drain caused entirely by bookkeeping.
+    //
+    // Skipping registration instead means such a device simply has one
+    // transport, RoutingPolicy never offers Bulk anywhere else, and photos fall
+    // back to BLE: slower, but working. BLE remains primary either way.
+    if (transport::NearbyConnectionsTransport::isSupportedOnThisDevice()) {
+        transport::NearbyConfig nearbyConfig;
+        nearbyConfig.serviceId = QString::fromLatin1(protocol::kServiceUuid);
+        core.addTransport(
+            std::make_unique<transport::NearbyConnectionsTransport>(nearbyConfig));
+        AT_LOG_INFO("app", "Nearby Connections registered as the bulk transport");
+    } else {
+        AT_LOG_INFO("app",
+                    "Play Services absent; photos will travel over BLE instead of Nearby");
+    }
+#else
+    // Desktop has no radio by design — we never write one (AD-07). Two instances
+    // discover each other over local sockets instead.
     transport::LoopbackConfig loopbackConfig;
     loopbackConfig.rendezvousDir = QDir::tempPath() + QStringLiteral("/anytime-loopback");
     core.addTransport(std::make_unique<transport::LoopbackTransport>(loopbackConfig));
+#endif
 
+    // A failed start is survivable: the shell still serves the UI, and AppCore
+    // keeps retrying transports on its own.
     if (const Result r = core.start(); r.isError()) {
-        qWarning("[AnyTime] core start: %s", r.message().c_str());
+        AT_LOG_ERROR("app", "core start failed: {}", r.message());
     }
 
     // ── Local API server  (AD-03, AD-08) ─────────────────────────────────────
@@ -156,14 +301,22 @@ int main(int argc, char* argv[])
 
     http::LocalHttpServer server(core, sseHub, serverConfig);
     if (!server.start()) {
-        qFatal("[AnyTime] local API server failed to bind");
+        // Without the server there is no UI at all, so this is the one start-up
+        // failure worth exiting over.
+        AT_LOG_CRITICAL("app", "local API server failed to bind; exiting");
+        core.stop();
+        logging::shutdown();
+        return 1;
     }
+
     // Also written to a file: the URL contains a fresh 64-hex token every launch,
     // so without this there is no way to reach the app except by reading the
-    // console at exactly the right moment.
+    // console at exactly the right moment. The URL itself is never logged.
     const QString urlFile = dataDir + QStringLiteral("/current-url.txt");
     if (QFile f(urlFile); f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         QTextStream(&f) << server.rootUrl() << '\n';
+    } else {
+        AT_LOG_WARN("app", "could not write {}", urlFile.toStdString());
     }
 
     // ── UI shell ─────────────────────────────────────────────────────────────
@@ -177,31 +330,25 @@ int main(int argc, char* argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("appInstance"), instance);
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
-                     []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
+                     []() {
+                         AT_LOG_CRITICAL("app", "the WebView shell failed to load");
+                         QCoreApplication::exit(-1);
+                     },
+                     Qt::QueuedConnection);
 
     engine.loadFromModule("AnyTime", "MainWebView");
+    AT_LOG_DEBUG("app", "WebView shell loading");
 #else
-    // Desktop: headless. Open the URL below in a browser. Run a second copy with
+    // Desktop: headless. Open the URL in a browser. Run a second copy with
     // --instance b and the two discover each other over loopback (AD-07).
-    qInfo("");
-    qInfo("  ┌──────────────────────────────────────────────────────────────");
-    qInfo("  │  AnyTime Chat %s%s", ANYTIME_VERSION,
-          instance.isEmpty() ? "" : qPrintable(QStringLiteral(" [instance %1]").arg(instance)));
-    qInfo("  │");
-    qInfo("  │  Open this in a browser:");
-    qInfo("  │  %s", qPrintable(server.rootUrl()));
-    qInfo("  │");
-    qInfo("  │  Second instance:  anytime --instance b");
-    qInfo("  │");
-    qInfo("  │  URL also written to:");
-    qInfo("  │  %s", qPrintable(urlFile));
-    qInfo("  └──────────────────────────────────────────────────────────────");
-    qInfo("");
+    printBanner(instance, server.rootUrl(), urlFile, logging::currentLogFile());
 #endif
 
     const int rc = app.exec();
+    AT_LOG_INFO("app", "event loop exited with code {}", rc);
 
     core.stop();
     server.stop();
+    logging::shutdown();
     return rc;
 }

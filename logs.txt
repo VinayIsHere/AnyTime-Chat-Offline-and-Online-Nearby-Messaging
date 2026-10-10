@@ -1,0 +1,605 @@
+
+I/anytimechat.ap: Late-enabling -Xcheck:jni
+E/anytimechat.ap: Unknown bits set in runtime_flags: 0x40000000
+I/anytimechat.ap: Using generational CollectorTypeCC GC.
+D/ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+I/OneTrace: Mark active for pid=4751? true
+D/cutils-dev: otrace_set_tracing_enabled? true
+D/cutils-dev: properties changed in otrace_seq_number_changed!
+D/CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10257; state: ENABLED
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusAutoResolutionFeature
+I/oplus.android.OplusFrameworkFactoryImpl: getOplusAutoResolutionFeature
+D/CompactWindowAppManager: initCompactApplicationInfo 
+W/libc    : Access denied finding property "ro.odm.prev.product.name"
+D/LoadedApk: mApplicationInfo overrideDisplayId:null
+D/nativeloader: Configuring clns-4 for other apk /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64:/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/org.anytimechat.app
+V/GraphicsEnvironment: ANGLE Developer option for 'org.anytimechat.app' set to: 'default'
+V/GraphicsEnvironment: App is not on the allowlist for updatable production driver.
+D/NetworkSecurityConfig: Using Network Security Config from resource network_security_config debugBuild: true
+D/NetworkSecurityConfig: Using Network Security Config from resource network_security_config debugBuild: true
+D/libMEOW : meow new tls: 0xb4000075540e62c0
+D/libMEOW : meow reload base cfg path: na
+D/libMEOW : meow reload overlay cfg path: na
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb4000075540f5900
+D/libMEOW : meow delete tls: 0xb4000075540e62c0
+Art: Clearing App Profiles failed.
+Art: Compiling App Profiles failed.
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libc++_shared.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Core_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+I/QtCore  : Start
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Gui_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Network_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6OpenGL_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Qml_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6QmlModels_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6QmlWorkerScript_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6QmlMeta_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Quick_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Sql_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6WebView_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6Svg_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libQt6WebViewQuick_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libplugins_platforms_qtforandroid_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+I/Qt      : Qt platform plugin started
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libplugins_webview_qtwebview_android_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/nativeloader: Load /data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/lib/arm64/libanytime_arm64-v8a.so using class loader ns clns-4 (caller=/data/app/~~FdRYt73W8FF196VtHecngg==/org.anytimechat.app-l-xzSFSLE-Y2FefL3WgQCw==/base.apk): ok
+D/OplusInputMethodUtil: init DEBUG to false, update DEBUG_IME to false
+D/OplusInputMethodUtil: init DEBUG to false, update DEBUG_IME to false
+I/oplus.android.OplusFrameworkFactoryImpl: Unknow feature:IOplusTextViewRTLUtilForUG
+I/Quality : ActivityThread: activityStart delay 596 org.anytimechat.app 4751
+I/SurfaceFactory: [static] sSurfaceFactory = com.mediatek.view.impl.SurfaceFactoryImpl@58ebcf5
+I/MsyncFactory: [static] sMsyncFactory = com.mediatek.view.impl.MsyncFactoryImpl@5d74a8a
+D/OpenMsyncAppList: loadTunerAppList + 
+I/OplusSlideAnimOptHelper: checkListMode: is blacklist mode = true
+D/OplusSlideAnimOptHelper: org.anytimechat.app scrollEffectOpt enable = true
+D/OpenMsyncAppList: loadTunerAppList - 
+D/WindowManager: Add to mViews: DecorView@db829d7[AnyTimeActivity],pkg= org.anytimechat.app
+D/ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+D/ExtensionsLoader: Opened libhwuiextimpl.so
+D/ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+D/ExtensionsLoader: Opened libSchedAssistExtImpl.so
+E/anytimechat.ap: ofbOpen failed with error=No such file or directory
+E/anytimechat.ap: sysOpen failed with error=No such file or directory
+D/ViewRootImpl[AnyTimeActivity]: hardware acceleration = true, sRendererEnabled = true, forceHwAccelerated = false
+D/libMEOW : meow new tls: 0xb400007553e92c40
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb400007553eaa380
+I/Quality : ActivityThread: activityLifecycle delay 630 org.anytimechat.app 4751
+D/nativeloader: Load libpowerhalwrap_jni.so using system ns (caller=/system/framework/mediatek-framework.jar): ok
+I/PowerHalWrapper: PowerHalWrapper.getInstance 
+I/Choreographer: Skipped 37 frames!  The application may be doing too much work on its main thread.
+I/Quality : Skipped: false 37 cost 629.0832 refreshRate 0 processName org.anytimechat.app
+D/nativeloader: Load libSchedAssistJni.so using system ns (caller=/system/framework/oplus-framework.jar): ok
+D/ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+D/ExtensionsLoader: Opened libSchedAssistExtImpl.so
+I/BufferQueueConsumer: [](id:128f00000000,api:0,p:-1,c:4751) connect: controlledByApp=false
+I/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0] constructor()
+D/ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+D/ExtensionsLoader: Opened libSchedAssistExtImpl.so
+V/ZoomWindowDecorView: setLastReportedMergedConfiguration mZoomDisplayHeight: 2400 getDecorView.230173143
+D/libMEOW : meow new tls: 0xb4000075582be9c0
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb4000075582d7b40
+D/hw-ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+D/libMEOW : meow new tls: 0xb400007553f1bbc0
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb400007553f2a440
+D/hw-ProcessState: Binder ioctl to enable oneway spam detection failed: Invalid argument
+E/OpenGLRenderer: fbcNotifyFrameComplete error: undefined symbol: fbcNotifyFrameComplete
+E/OpenGLRenderer: fbcNotifyNoRender error: undefined symbol: fbcNotifyNoRender
+D/SurfaceComposerClient: VRR [FRTC] client handle [bufferId:18446744073709551615 framenumber:0] [ffffffff, ffffffff]
+I/AnyTime : 2026-09-20 20:10:55.328 [info] [log] logging at level 'debug' to /data/user/0/org.anytimechat.app/files/logs/anytime.log  (LogSetup.cpp:116)
+I/AnyTime : 2026-09-20 20:10:55.328 [info] [app] AnyTime Chat 0.1 starting  (main.cpp:161)
+D/AnyTime : 2026-09-20 20:10:55.329 [debug] [app] data directory: /data/user/0/org.anytimechat.app/files  (main.cpp:162)
+I/AnyTime : 2026-09-20 20:10:55.329 [info] [storage] generated a new at-rest data key  (MonocypherDataCipher.cpp:110)
+I/AnyTime : 2026-09-20 20:10:55.345 [info] [storage] creating schema v3  (SqliteStore.cpp:181)
+I/AnyTime : 2026-09-20 20:10:55.355 [info] [storage] migrating schema to v2 (media)  (SqliteStore.cpp:289)
+I/AnyTime : 2026-09-20 20:10:55.357 [info] [storage] migrating schema to v3 (outbox payload class)  (SqliteStore.cpp:323)
+I/AnyTime : 2026-09-20 20:10:55.358 [info] [storage] database open at schema v3  (SqliteStore.cpp:384)
+D/AnyTime : 2026-09-20 20:10:55.358 [debug] [transport] registered ble  (TransportRegistry.cpp:30)
+D/AnyTime : 2026-09-20 20:10:55.374 [debug] [transport] registered nearby  (TransportRegistry.cpp:30)
+I/AnyTime : 2026-09-20 20:10:55.374 [info] [app] Nearby Connections registered as the bulk transport  (main.cpp:244)
+I/AnyTime : 2026-09-20 20:10:55.374 [info] [core] no account yet; the mesh starts after sign-up  (AppCore.cpp:168)
+I/AnyTime : 2026-09-20 20:10:55.375 [info] [http] local API listening on 127.0.0.1:39261  (LocalHttpServer.cpp:118)
+I/WebViewFactory: Loading com.google.android.webview version 151.0.7922.199 (code 792219903)
+D/ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar
+D/nativeloader: Configuring clns-5 for other apk /apex/com.android.extservices/javalib/android.ext.adservices.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/lib/arm64:/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+D/nativeloader: Extending system_exposed_libraries: libapuwareapusys.mtk.so:libapuwareapusys_v2.mtk.so:libapuwarexrp.mtk.so:libapuwarexrp_v2.mtk.so:libapuwareutils.mtk.so:libapuwareutils_v2.mtk.so:libapuwarehmp.mtk.so:libmcv_runtime_usdk.mtk.so:libneuron_graph_delegate.mtk.so:libneuronusdk_adapter.mtk.so:libtflite_mtk.mtk.so:libarmnn_ndk.mtk.so:libcmdl_ndk.mtk.so:libnir_neon_driver_ndk.mtk.so:libmvpu_runtime.mtk.so:libmvpu_runtime_pub.mtk.so:libmvpu_engine_pub.mtk.so:libmvpu_pattern_pub.mtk.so:libmvpuop_mtk_cv.mtk.so:libmvpuop_mtk_nn.mtk.so:libteeservice_client.trustonic.so:libSloganJni.oplus.so:libsuperNight.oplus.so
+D/nativeloader: InitApexLibraries:
+D/nativeloader:   com_android_appsearch: libicing.so
+D/nativeloader:   com_android_art: libartservice.so
+D/nativeloader:   com_android_conscrypt: libjavacrypto.so
+D/nativeloader:   com_android_extservices: libtflite_support_classifiers_native.so
+D/nativeloader:   com_android_mediaprovider: libpdfclient.so
+D/nativeloader:   com_android_os_statsd: libstats_jni.so
+D/nativeloader:   com_android_tethering: libandroid_net_connectivity_com_android_net_module_util_jni.so:libandroid_net_connectivity_com_android_net_module_util_jni_CommonConnectivityJni.so:libcrypto_httpengine.so:libframework-connectivity-jni.so:libframework-connectivity-tiramisu-jni.so:libhttpengine.so:libservice-connectivity.so:libservice-thread-jni.so
+D/nativeloader: Configuring clns-6 for other apk /data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/lib/arm64:/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+E/MultiApp.Impl: OplusMultiAppImpl
+I/cr_WVCFactoryProvider: version=151.0.7922.199 (792219903) minSdkVersion=29 multiprocess=true packageId=127 splits=<none>
+D/nativeloader: Load /data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk!/lib/arm64-v8a/libwebviewchromium.so using class loader ns clns-6 (caller=/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk): ok
+D/nativeloader: Load /system/lib64/libwebviewchromium_plat_support.so using class loader ns clns-6 (caller=/data/app/~~tAdabQSTvqjxa4KPKzPlJA==/com.google.android.webview-QY2Sk9yjSXVjRnXk--l37w==/base.apk): ok
+I/chromium: [0920/201055.508842:INFO:android_webview/browser/variations/variations_seed_loader.cc:67] Failed to open file for reading.: No such file or directory (2)
+I/chromium: [0920/201055.509092:INFO:android_webview/browser/variations/variations_seed_loader.cc:67] Failed to open file for reading.: No such file or directory (2)
+I/cr_LibraryLoader: Successfully loaded native library
+I/cr_CachingUmaRecorder: Flushed 43 samples from 22 histograms, 0 samples were dropped.
+I/cr_ChildProcLH: ScopedServiceBindingBatch.tryActivate: false
+I/cr_CombinedPProvider: #registerProvider() provider:WV.sj@3733e51 isPolicyCacheEnabled:false policyProvidersSize:0
+I/cr_PolicyProvider: #setManagerAndSource() 0
+I/cr_DisplayManager: Is Display Topology available: false
+I/cr_policy: registerReceiver succeeded after 2ms
+I/cr_CombinedPProvider: #linkNativeInternal() 1
+I/cr_AppResProvider: #getApplicationRestrictionsFromUserManager() Bundle[EMPTY_PARCEL]
+I/cr_PolicyProvider: #notifySettingsAvailable() 0
+I/cr_CombinedPProvider: #onSettingsAvailable() 0
+I/cr_CombinedPProvider: #flushPolicies()
+W/libc    : Access denied finding property "ro.vendor.api_level"
+D/CompatibilityChangeReporter: Compat change id reported: 171228096; UID 10257; state: ENABLED
+I/cr_AppResProvider: #getApplicationRestrictionsFromUserManager() Bundle[EMPTY_PARCEL]
+I/cr_PolicyProvider: #notifySettingsAvailable() 0
+I/cr_CombinedPProvider: #onSettingsAvailable() 0
+I/cr_CombinedPProvider: #flushPolicies()
+I/CameraManagerExtImpl: getInstance success!
+I/CameraManagerExtImpl: packagename is org.anytimechat.app
+I/OplusCameraManager: saveOpPackageName, mOpPackageName: org.anytimechat.app
+I/OplusCameraManagerGlobal: setClientInfo, packageName: org.anytimechat.app, uid: 10257, pid: 4751
+I/OplusCameraManagerGlobal: Connecting to camera service
+E/OplusCustomizeRestrictionManager: sInstance is null, start a new sInstance
+I/CameraManagerGlobal: Connecting to camera service
+D/libMEOW : meow new tls: 0xb4000074a721bc00
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb4000074a72305c0
+W/cr_media: BLUETOOTH_CONNECT permission is missing.
+W/cr_media: getBluetoothAdapter() requires BLUETOOTH permission
+W/cr_media: registerBluetoothIntentsIfNeeded: Requires BLUETOOTH permission
+E/Parcel  : Reading a NULL string not supported here.
+D/libMEOW : meow new tls: 0xb4000074a73d7c80
+D/libMEOW : applied 0 plugin for [org.anytimechat.app].
+D/libMEOW : rebuild call chain: 0xb4000074a5c23a40
+I/Quality : Skipped: false 1 cost 16.906555 refreshRate 0 processName org.anytimechat.app
+E/Parcel  : Reading a NULL string not supported here.
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) disconnect: api 1
+E/BLASTBufferQueue: BLASTBufferItemConsumer::onDisconnect()
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0](f:0,a:0) setNextTransaction
+E/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0](f:0,a:1) not apply transaction, processNextBufferLocked size=1080x2290 mFrameNumber=4 applyTransaction=false mTimestamp=19243567375376(auto) mPendingTransactions.size=0 graphicBufferId=20405389623300 transform=0
+E/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0](f:0,a:1) setNextTransaction
+E/Parcel  : Reading a NULL string not supported here.
+I/anytimechat.ap: hiddenapi: Accessing hidden field Landroid/content/pm/ApplicationInfo;->primaryCpuAbi:Ljava/lang/String; (runtime_flags=0, domain=platform, api=unsupported) from Lorg/chromium/android_webview/SystemStateUtil; (domain=app, TargetSdkVersion=36) using reflection: allowed
+I/BufferQueueConsumer: [](id:128f00000001,api:0,p:-1,c:4751) connect: controlledByApp=true
+I/Quality : Skipped: false 2 cost 36.061333 refreshRate 0 processName org.anytimechat.app
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) disconnect: api 1
+E/BLASTBufferQueue: BLASTBufferItemConsumer::onDisconnect()
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+D/TextureView: getHardwareLayer, createNewSurface:false
+I/Quality : Skipped: false 2 cost 44.183537 refreshRate 0 processName org.anytimechat.app
+W/AudioCapabilities: Unsupported mime audio/x-adpcm-dvi-ima
+W/AudioCapabilities: Unsupported mime audio/x-adpcm-dvi-ima
+W/AudioCapabilities: Unsupported mime audio/x-adpcm-ms
+W/AudioCapabilities: Unsupported mime audio/x-adpcm-ms
+W/AudioCapabilities: Unsupported mime audio/alac
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+W/AudioCapabilities: Unsupported mime audio/alac
+W/AudioCapabilities: Unsupported mime audio/ape
+W/AudioCapabilities: Unsupported mime audio/ape
+W/AudioCapabilities: Unsupported mime audio/x-ms-wma
+W/AudioCapabilities: Unsupported mime audio/x-ms-wma
+D/AnyTime : 2026-09-20 20:10:55.918 [debug] [app] WebView shell loading  (main.cpp:312)
+W/AudioCapabilities: Unsupported mime audio/ffmpeg
+W/VideoCapabilities: Unsupported mime video/ffmpeg
+W/VideoCapabilities: Unsupported mime image/vnd.android.heic
+W/VideoCapabilities: Unsupported mime image/vnd.android.heic
+W/VideoCapabilities: Unsupported mime image/vnd.android.heic
+W/VideoCapabilities: Unsupported mime image/vnd.android.heic
+W/VideoCapabilities: Unsupported mime video/x-ms-wmv
+W/VideoCapabilities: Unsupported mime video/x-ms-wmv
+D/AnyTime : 2026-09-20 20:10:56.015 [debug] [qt] [AnyTime] UI loaded  (MainWebView.qml:32)
+D/AnyTime : 2026-09-20 20:10:56.033 [debug] [http] GET api/account -> 404  (LocalHttpServer.cpp:207)
+D/AnyTime : 2026-09-20 20:10:56.034 [debug] [http] request without the API prefix refused  (LocalHttpServer.cpp:172)
+D/AnyTime : 2026-09-20 20:10:56.046 [debug] [qt] [AnyTime] UI loaded  (MainWebView.qml:32)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/Quality : Skipped: true 8 cost 137.25711 refreshRate 0 processName org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/anytimechat.ap: Compiler allocated 4449KB to compile void android.view.ViewRootImpl.performTraversals()
+I/AnyTime : file chooser installed on Qt's WebView
+V/AutofillManager: requestHideFillUi(null): anchor = null
+I/anytimechat.ap: hiddenapi: Accessing hidden method Landroid/view/MotionEvent;->getEventTimeNano()J (runtime_flags=0, domain=platform, api=unsupported) from LWV/gk1; (domain=app, TargetSdkVersion=36) using reflection: allowed
+V/AutofillManager: receiver results: flags=7 enabled=true, enabledForAugmentedOnly: false
+I/AssistStructure: Flattened final assist data: 4352 bytes, containing 1 windows, 6 views
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 65538
+I/AssistStructure: Flattened final assist data: 4848 bytes, containing 1 windows, 6 views
+D/InputMethodManager: showSoftInput() view=android.webkit.WebView{e1a8cc VFEDHVC.. .F...... 0,0-1080,2157 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController: show(ime(), fromIme=true)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+D/ProfileInstaller: Installing profile for org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: notifyViewExited(1073741824, 65536
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/AssistStructure: Flattened final assist data: 4848 bytes, containing 1 windows, 6 views
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 65536
+D/InputMethodManager: showSoftInput() view=android.webkit.WebView{e1a8cc VFEDHVC.. .F...... 0,0-1080,1392 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController: show(ime(), fromIme=true)
+D/InsetsController: show(ime(), fromIme=true)
+W/FinalizerDaemon: type=1400 audit(0.0:159): avc: denied { getopt } for path="/dev/socket/usap_pool_primary" scontext=u:r:untrusted_app:s0:c1,c257,c512,c768 tcontext=u:r:zygote:s0 tclass=unix_stream_socket permissive=0 app=org.anytimechat.app
+W/System  : A resource failed to call release. 
+W/System  : A resource failed to call release. 
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:05.268
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:05.777
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 65537
+D/InputMethodManager: showSoftInput() view=android.webkit.WebView{e1a8cc VFEDHVC.. .F...... 0,0-1080,1392 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InsetsController: show(ime(), fromIme=true)
+D/InsetsController: show(ime(), fromIme=true)
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:07.194
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:07.687
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:07.834
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/ViewRootImpl[AnyTimeActivity]: [ANR Warning]Input routeing takes more than 6000ms since 1970-01-01 05:30:00.000, this = com.mediatek.view.impl.ViewDebugManagerImpl@85a4564
+V/ViewRootImpl[AnyTimeActivity]: Input event delivered to android.view.ViewRootImpl$SyntheticInputStage@2f9fd17 at 2026-09-20 20:11:08.036
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 65539
+D/ScrollOptimizationHelper: can't find the config file for optimizaiton
+D/ScrollOptimizationHelper: will not debug for debug is false
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+I/oplus.android.OplusFrameworkFactoryImpl: get feature:IOplusDynamicVsyncFeature
+D/WindowManager: Add to mViews: DecorView@be49be2[AnyTimeActivity],pkg= org.anytimechat.app
+D/ViewRootImpl[AnyTimeActivity]: hardware acceleration = true, sRendererEnabled = true, forceHwAccelerated = false
+I/Quality : Skipped: false 3 cost 61.08166 refreshRate 0 processName org.anytimechat.app
+I/BufferQueueConsumer: [](id:128f00000002,api:0,p:-1,c:4751) connect: controlledByApp=false
+I/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#1] constructor()
+V/ZoomWindowDecorView: setLastReportedMergedConfiguration mZoomDisplayHeight: 2400 getDecorView.199531490
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#1(BLAST Consumer)1](id:128f00000002,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+D/SurfaceComposerClient: VRR [FRTC] client handle [bufferId:18446744073709551615 framenumber:0] [ffffffff, ffffffff]
+I/AssistStructure: Flattened final assist data: 6952 bytes, containing 2 windows, 23 views
+I/Quality : Skipped: false 7 cost 117.5197 refreshRate 0 processName org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+D/OplusScrollToTopManager: unregisterGuidePopupDismissReceiverInSystemUI
+D/OplusScrollToTopManager: Receiver not registered: android.view.OplusScrollToTopManager$1@2029363
+D/OplusScrollToTopManager: unregisterSystemUIBroadcastReceiver 
+D/OplusScrollToTopManager: java.lang.IllegalArgumentException: Receiver not registered: android.view.OplusScrollToTopManager$2@5931b60
+V/ZoomWindowDecorView: removeZoomView
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#1(BLAST Consumer)1](id:128f00000002,api:1,p:4751,c:4751) disconnect: api 1
+E/BLASTBufferQueue: BLASTBufferItemConsumer::onDisconnect()
+D/OpenGLRenderer: endAllActiveAnimators on 0xb4000074a6174400 (ListView) with handle 0xb4000075583cd4e0
+D/View    : [Warning] assignParent to null: this = DecorView@be49be2[AnyTimeActivity]
+I/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#1] destructor()
+I/BufferQueueConsumer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#1(BLAST Consumer)1](id:128f00000002,api:0,p:-1,c:4751) disconnect
+V/AutofillManager: notifyViewExited(1073741824, 65538
+I/Quality : Skipped: false 2 cost 45.707756 refreshRate 0 processName org.anytimechat.app
+I/AssistStructure: Flattened final assist data: 4856 bytes, containing 1 windows, 6 views
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/BLASTBufferQueue: releaseBufferCallbackThunk bufferId:20405389623311 framenumber:4 blastBufferQueue is dead
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 65538
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/Quality : Skipped: true 1 cost 16.6772 refreshRate 0 processName org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+I/AnyTime : 2026-09-20 20:11:11.888 [info] [identity] generated a new identity 808ef4023bc08319  (MonocypherIdentityStore.cpp:156)
+I/AnyTime : 2026-09-20 20:11:11.890 [info] [account] account created for peer 808ef4023bc08319  (AccountService.cpp:145)
+I/AnyTime : 2026-09-20 20:11:11.891 [info] [core] bringing the mesh up as 808ef4023bc08319  (AppCore.cpp:187)
+I/AnyTime : 2026-09-20 20:11:11.893 [info] [ble] asking for Bluetooth permissions  (BleGattTransport.cpp:505)
+I/AnyTimePermissions: requesting 3 permission(s)
+D/AnyTime : 2026-09-20 20:11:11.895 [debug] [ble] waiting for Bluetooth permission  (BleGattTransport.cpp:164)
+D/AnyTime : 2026-09-20 20:11:11.895 [debug] [transport] ble not started: Bluetooth permission has not been granted yet. (permission_denied)  (TransportRegistry.cpp:51)
+D/AnyTime : 2026-09-20 20:11:11.899 [debug] [nearby] waiting for Bluetooth permission before starting Nearby  (NearbyConnectionsTransport.cpp:181)
+D/AnyTime : 2026-09-20 20:11:11.899 [debug] [transport] nearby not started: Bluetooth permission has not been granted yet. (permission_denied)  (TransportRegistry.cpp:51)
+W/AnyTime : 2026-09-20 20:11:11.899 [warning] [core] no transport running yet (Bluetooth permission has not been granted yet.); retrying every 3000 ms  (AppCore.cpp:200)
+I/AnyTime : 2026-09-20 20:11:11.899 [info] [mesh] started as 808ef4023bc08319 (discoverable)  (MeshEngine.cpp:91)
+D/AnyTime : 2026-09-20 20:11:11.900 [debug] [core] advertising not applied yet: No transport available.  (AppCore.cpp:84)
+V/AutofillManager: commit() called by app
+V/AutofillManager: cancel() called by app or augmented autofill service
+I/Quality : Skipped: true 1 cost 27.101364 refreshRate 0 processName org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+W/AnyTime : 2026-09-20 20:11:13.207 [warning] [qt] Found no valid pending permission request for request code 4711  (:)
+D/AnyTime : 2026-09-20 20:11:13.221 [debug] [sse] event stream opened (1 open)  (SseHub.cpp:59)
+W/AnyTime : 2026-09-20 20:11:13.222 [warning] [discovery] cannot scan yet: No transport is available to scan with.  (DiscoveryService.cpp:50)
+E/AnyTime : 2026-09-20 20:11:13.223 [error] [http] POST api/discovery -> 503  (LocalHttpServer.cpp:203)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/Quality : Skipped: true 10 cost 177.8647 refreshRate 0 processName org.anytimechat.app
+I/anytimechat.ap: hiddenapi: Accessing hidden method Ldalvik/system/VMStack;->getStackClass2()Ljava/lang/Class; (runtime_flags=0, domain=core-platform, api=unsupported) from LWV/x6; (domain=app, TargetSdkVersion=36) using reflection: allowed
+E/FilePhenotypeFlags: Config package com.google.android.gms.clearcut_client#org.anytimechat.app cannot use FILE backing without declarative registration. See go/phenotype-android-integration#phenotype for more information. This will lead to stale flags.
+E/FilePhenotypeFlags: Config package com.google.android.gms.clearcut_client#org.anytimechat.app cannot use FILE backing without declarative registration. See go/phenotype-android-integration#phenotype for more information. This will lead to stale flags.
+E/Parcel  : Reading a NULL string not supported here.
+E/FilePhenotypeFlags: Config package com.google.android.gms.clearcut_client#org.anytimechat.app cannot use FILE backing without declarative registration. See go/phenotype-android-integration#phenotype for more information. This will lead to stale flags.
+E/FilePhenotypeFlags: Config package com.google.android.gms.clearcut_client#org.anytimechat.app cannot use FILE backing without declarative registration. See go/phenotype-android-integration#phenotype for more information. This will lead to stale flags.
+E/Parcel  : Reading a NULL string not supported here.
+D/BluetoothGattServer: registerCallback()
+D/BluetoothGattServer: registerCallback() - UUID=8a267a4a-7814-411d-b59b-51a7309354f0
+D/BluetoothGattServer: onServerRegistered() - status=0 serverIf=9
+D/BluetoothGattServer: addService() - service: 41a42c6d-af86-4960-bd0c-b8bb84dd202c
+I/AnyTimeBle: radio started
+D/BluetoothGattServer: onServiceAdded() - handle=47 uuid=41a42c6d-af86-4960-bd0c-b8bb84dd202c status=0
+I/AnyTime : 2026-09-20 20:11:14.801 [info] [ble] radio started  (BleGattTransport.cpp:209)
+D/CompatibilityChangeReporter: Compat change id reported: 160794467; UID 10257; state: ENABLED
+I/AnyTimeMesh: mesh foreground service running
+I/AnyTimeNearby: nearby radio started
+I/AnyTime : 2026-09-20 20:11:14.829 [info] [nearby] Nearby Connections started  (NearbyConnectionsTransport.cpp:218)
+D/AnyTimeBle: advertising requested
+D/AnyTime : 2026-09-20 20:11:14.846 [debug] [discovery] a transport came up; resuming the requested scan  (DiscoveryService.cpp:95)
+D/AnyTimeBle: advertising
+D/BluetoothLeScanner: onScannerRegistered() - status=0 scannerId=11 mScannerId=0
+D/AnyTimeBle: scanning started, mode 2
+D/AnyTime : 2026-09-20 20:11:14.864 [debug] [ble] scanning in active mode  (BleGattTransport.cpp:252)
+D/AnyTime : 2026-09-20 20:11:14.865 [debug] [nearby] discovering (active mode only)  (NearbyConnectionsTransport.cpp:256)
+I/AnyTime : 2026-09-20 20:11:14.865 [info] [discovery] scanning for people nearby  (DiscoveryService.cpp:63)
+I/AnyTime : 2026-09-20 20:11:14.866 [info] [core] all transports are up  (AppCore.cpp:134)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/Parcel  : Reading a NULL string not supported here.
+D/BluetoothGattServer: onServerConnectionState() - status=0 serverIf=9 device=4B:84:88:E0:81:23
+D/AnyTimeBle: link 1: connected as peripheral
+D/AnyTime : 2026-09-20 20:11:16.042 [debug] [transport] ble link 1 up, peer not yet identified  (TransportRegistry.cpp:189)
+D/BluetoothGattServer: onConnectionUpdated() - Device=4B:84:88:E0:81:23 interval=6 latency=0 timeout=500 status=0
+D/AnyTimeNearby: advertising
+D/NearbyConnections: Discovery started with NFC requested, but there is no NfcDispatcher available. Discovery will continue over other mediums instead. To use NFC discovery, pass in an Activity when calling Nearby.getConnectionsClient().
+D/AnyTimeNearby: discovering
+D/BluetoothGattServer: onMtuChanged() - device=4B:84:88:E0:81:23, mtu=517
+D/AnyTimeBle: link 1: ready
+D/AnyTime : 2026-09-20 20:11:17.005 [debug] [transport] incoming ble link 1 identified as 1f3f89e96dd948b8  (TransportRegistry.cpp:173)
+I/AnyTime : 2026-09-20 20:11:17.006 [info] [discovery] peer 1f3f89e96dd948b8 in range (-61 dBm)  (DiscoveryService.cpp:131)
+D/BluetoothGattServer: onConnectionUpdated() - Device=4B:84:88:E0:81:23 interval=39 latency=0 timeout=500 status=0
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+D/AnyTime : 2026-09-20 20:11:19.127 [debug] [session] handshake with 1f3f89e96dd948b8 started as initiator  (SessionManager.cpp:59)
+D/AnyTime : 2026-09-20 20:11:19.132 [debug] [mesh] envelope for 1f3f89e96dd948b8 held until the session is up (1 waiting)  (MeshEngine.cpp:325)
+I/AnyTime : 2026-09-20 20:11:19.132 [info] [request] chat request to 1f3f89e96dd948b8 queued until a session is up  (RequestService.cpp:143)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/AnyTime : 2026-09-20 20:11:19.204 [info] [session] secure session with 1f3f89e96dd948b8 established (as initiator)  (SessionManager.cpp:129)
+D/AnyTime : 2026-09-20 20:11:19.207 [debug] [mesh] sending 1 envelope(s) held for 1f3f89e96dd948b8  (MeshEngine.cpp:568)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/anytimechat.ap: Background young concurrent copying GC freed 2386KB AllocSpace bytes, 1(28KB) LOS objects, 32% free, 5043KB/7480KB, paused 77us,30us total 189.703ms
+D/AnyTime : 2026-09-20 20:11:22.415 [debug] [core] envelope type 2 from 1f3f89e96dd948b8  (AppCore.cpp:241)
+D/AnyTime : 2026-09-20 20:11:22.423 [debug] [storage] created chat chat_1f3f89e96dd948b8 for peer 1f3f89e96dd948b8  (SqliteStore.cpp:819)
+I/AnyTime : 2026-09-20 20:11:22.425 [info] [request] 1f3f89e96dd948b8 accepted our request  (RequestService.cpp:353)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+D/AnyTimeBle: scan mode 2 -> 0
+D/BluetoothLeScanner: onScannerRegistered() - status=0 scannerId=11 mScannerId=0
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+D/AnyTimeBle: scanning started, mode 0
+D/AnyTime : 2026-09-20 20:11:24.480 [debug] [ble] scanning in passive mode  (BleGattTransport.cpp:252)
+I/AnyTime : 2026-09-20 20:11:24.487 [info] [discovery] scanning for people nearby  (DiscoveryService.cpp:63)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+E/anytimechat.ap: hiddenapi: Accessing hidden method Landroid/view/MotionEvent;->getHistoricalEventTimeNano(I)J (runtime_flags=0, domain=platform, api=max-target-o) from LWV/gk1; (domain=app, TargetSdkVersion=36) using reflection: denied
+V/AutofillManager: requestHideFillUi(null): anchor = null
+D/InputMethodManager: showSoftInput() view=android.webkit.WebView{e1a8cc VFEDHVC.. .F...... 0,0-1080,2157 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+I/AssistStructure: Flattened final assist data: 1620 bytes, containing 1 windows, 3 views
+D/InsetsController: show(ime(), fromIme=true)
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: notifyViewExited(1073741824, 131072
+V/AutofillManager: ignoring notifyViewEntered(flags=0, view=1073741824:131072) on state FINISHED because view was already entered: {1073741824:131072}
+V/AutofillManager: notifyValueChanged(1073741824:131072): ignoring on state FINISHED
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: notifyValueChanged(1073741824:131072): ignoring on state FINISHED
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+V/AutofillManager: notifyViewExited(1073741824, 131072
+D/AnyTime : 2026-09-20 20:11:28.962 [debug] [storage] stored message msg_1 (2 bytes) in chat chat_1f3f89e96dd948b8  (SqliteStore.cpp:923)
+D/AnyTime : 2026-09-20 20:11:28.963 [debug] [chat] message msg_1 (2 bytes) queued in chat chat_1f3f89e96dd948b8  (ChatService.cpp:139)
+D/AnyTime : 2026-09-20 20:11:28.965 [debug] [delivery] message msg_1 queued for 1f3f89e96dd948b8  (DeliveryService.cpp:84)
+D/AnyTime : 2026-09-20 20:11:28.968 [debug] [delivery] message msg_1 sent to 1f3f89e96dd948b8 (attempt 1)  (DeliveryService.cpp:114)
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+I/Quality : Skipped: false 2 cost 33.71332 refreshRate 0 processName org.anytimechat.app
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+D/AnyTime : 2026-09-20 20:11:29.045 [debug] [delivery] message msg_1 delivered to 1f3f89e96dd948b8  (DeliveryService.cpp:181)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+V/AutofillManager: requestHideFillUi(null): anchor = null
+E/CameraManagerGlobal: Camera 4 is not available. Ignore physical camera status change
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:1,p:4751,c:4751) disconnect: api 1
+E/BLASTBufferQueue: BLASTBufferItemConsumer::onDisconnect()
+I/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0] destructor()
+I/BufferQueueConsumer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#0(BLAST Consumer)0](id:128f00000000,api:0,p:-1,c:4751) disconnect
+I/BufferQueueProducer: [SurfaceTexture-0-4751-0](id:128f00000001,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueConsumer: [SurfaceTexture-0-4751-0](id:128f00000001,api:0,p:-1,c:4751) disconnect
+I/BLASTBufferQueue: releaseBufferCallbackThunk bufferId:20405389623301 framenumber:948 blastBufferQueue is dead
+E/CameraManagerGlobal: Camera 4 is not available. Ignore physical camera status change
+E/CameraManagerGlobal: Camera 4 is not available. Ignore physical camera status change
+E/CameraManagerGlobal: Camera 4 is not available. Ignore physical camera status change
+I/BufferQueueConsumer: [](id:128f00000003,api:0,p:-1,c:4751) connect: controlledByApp=false
+I/BLASTBufferQueue: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#2] constructor()
+I/BufferQueueProducer: [ViewRootImpl[org.anytimechat.app/com.anytimechat.AnyTimeActivity]#2(BLAST Consumer)2](id:128f00000003,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+D/SurfaceComposerClient: VRR [FRTC] client handle [bufferId:18446744073709551615 framenumber:0] [ffffffff, ffffffff]
+I/BufferQueueConsumer: [](id:128f00000004,api:0,p:-1,c:4751) connect: controlledByApp=true
+I/BufferQueueProducer: [SurfaceTexture-0-4751-1](id:128f00000004,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+D/TextureView: getHardwareLayer, createNewSurface:false
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-1](id:128f00000004,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-1](id:128f00000004,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/ExtensionsLoader: freeAllBuffers: 1 buffers were freed while being dequeued!
+I/BufferQueueProducer: [SurfaceTexture-0-4751-1](id:128f00000004,api:1,p:4751,c:4751) disconnect: api 1
+I/BufferQueueProducer: [SurfaceTexture-0-4751-1](id:128f00000004,api:1,p:4751,c:4751) connect: api=1 producerControlledByApp=true
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/Parcel  : Reading a NULL string not supported here.
+D/AnyTime : 2026-09-20 20:11:54.682 [debug] [storage] stored image media_70569451-e128-4432-a435-03988a93ca7c (121698 bytes)  (SqliteStore.cpp:1006)
+D/AnyTime : 2026-09-20 20:11:54.691 [debug] [storage] stored message msg_2 (0 bytes) in chat chat_1f3f89e96dd948b8  (SqliteStore.cpp:923)
+I/AnyTime : 2026-09-20 20:11:54.691 [info] [chat] image msg_2 (121698 bytes) queued in chat chat_1f3f89e96dd948b8  (ChatService.cpp:225)
+D/AnyTime : 2026-09-20 20:11:54.716 [debug] [delivery] message msg_2 queued for 1f3f89e96dd948b8  (DeliveryService.cpp:84)
+E/AnyTime : 2026-09-20 20:11:54.740 [error] [mesh] could not encode packet type 3 for 1f3f89e96dd948b8: Payload exceeds the 16-bit length field.  (MeshEngine.cpp:199)
+D/AnyTime : 2026-09-20 20:11:54.745 [debug] [delivery] message msg_2 not sent (attempt 1): Payload exceeds the 16-bit length field.  (DeliveryService.cpp:125)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/AnyTime : 2026-09-20 20:11:58.291 [error] [mesh] could not encode packet type 3 for 1f3f89e96dd948b8: Payload exceeds the 16-bit length field.  (MeshEngine.cpp:199)
+D/AnyTime : 2026-09-20 20:11:58.302 [debug] [delivery] message msg_2 not sent (attempt 2): Payload exceeds the 16-bit length field.  (DeliveryService.cpp:125)
+D/AnyTime : 2026-09-20 20:12:03.857 [debug] [core] envelope type 4 from 1f3f89e96dd948b8  (AppCore.cpp:241)
+D/AnyTime : 2026-09-20 20:12:03.863 [debug] [storage] stored message msg_3 (3 bytes) in chat chat_1f3f89e96dd948b8  (SqliteStore.cpp:923)
+D/AnyTime : 2026-09-20 20:12:03.865 [debug] [chat] message msg_3 (3 bytes) received from 1f3f89e96dd948b8  (ChatService.cpp:407)
+E/GPUAUX  : [AUX]GuiExtAuxCheckAuxPath:671: Null anb
+E/AnyTime : 2026-09-20 20:12:04.260 [error] [mesh] could not encode packet type 3 for 1f3f89e96dd948b8: Payload exceeds the 16-bit length field.  (MeshEngine.cpp:199)
+D/AnyTime : 2026-09-20 20:12:04.268 [debug] [delivery] message msg_2 not sent (attempt 3): Payload exceeds the 16-bit length field.  (DeliveryService.cpp:125)

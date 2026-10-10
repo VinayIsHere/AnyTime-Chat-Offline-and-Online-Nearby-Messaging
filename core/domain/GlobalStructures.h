@@ -76,4 +76,47 @@ struct MessagePage {
     bool                 hasMore = false;
 };
 
+/// A Chat joined with everything the chat list renders — the read model behind
+/// GET /chats and GET /chats/:id.
+///
+/// A bare Chat carries only a PeerId, so serialising one on its own produces a
+/// row with no name: the display name lives on the Contact and the preview lives
+/// on the last Message. Joining them here, once, is what stops each caller
+/// rediscovering that and passing an empty handle.
+///
+/// `displayName` is the PINNED contact name, never the peer's live announced
+/// nickname — trust comes from the key pinned at accept time, so a peer renaming
+/// themselves must not change how an existing chat reads (section 08).
+struct ChatSummary {
+    ChatId      id;
+    PeerId      peerId;
+    std::string displayName;
+    std::string lastMessage;
+    Timestamp   lastMessageAt = kNoTimestamp;
+    int         unreadCount   = 0;
+
+    /// Live radio state, filled in by the caller that can see DiscoveryService.
+    /// Storage knows nothing about who is currently in range.
+    bool reachable = false;
+
+    /// We blocked this contact. Their messages are dropped on arrival and ours
+    /// are refused, so the chat screen swaps its composer for an unblock prompt
+    /// rather than offering a send button that can only fail.
+    bool blocked = false;
+};
+
+/// One row of the block list — the read model behind GET /blocked.
+///
+/// A block is keyed on the key fingerprint alone, and most blocked peers are
+/// NOT contacts: declining a request with "block" is the common path. So the
+/// name is the best one available, in trust order — the pinned contact name,
+/// else the nickname from their last request, else their last announce. It may
+/// be empty for a peer we only ever saw as an id; the UI falls back to the
+/// fingerprint handle then, which is the part that actually identifies them.
+struct BlockedPeer {
+    PeerId      peerId;
+    std::string displayName;
+    Timestamp   blockedAt = kNoTimestamp;
+};
+
 }  // namespace anytime

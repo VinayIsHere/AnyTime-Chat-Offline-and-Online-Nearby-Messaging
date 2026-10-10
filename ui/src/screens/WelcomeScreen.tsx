@@ -35,13 +35,15 @@ export default function WelcomeScreen() {
 
 const welcomeStyles: Record<string, React.CSSProperties> = {
   glow: { position: 'absolute', top: -140, left: '50%', transform: 'translateX(-50%)', width: 520, height: 520, borderRadius: '50%', background: colors.glow, pointerEvents: 'none' },
-  body: { position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', padding: '0 28px' },
-  mark: { marginTop: 96, width: 76, height: 76, borderRadius: 24, background: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadow.accentLg, flex: 'none' },
-  title: { margin: '30px 0 0', fontSize: 38, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em', textWrap: 'pretty' },
+  // Scrolls on short screens instead of letting the CTA collide with the promises.
+  body: { position: 'relative', flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 24px' },
+  mark: { marginTop: 'clamp(32px, 10vh, 96px)', width: 76, height: 76, borderRadius: 24, background: colors.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: shadow.accentLg, flex: 'none' },
+  title: { margin: '28px 0 0', fontSize: 'clamp(30px, 9vw, 38px)', fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.03em', textWrap: 'pretty' },
   sub: { margin: '14px 0 0', fontSize: 15, fontWeight: 500, lineHeight: 1.55, color: colors.textMuted, maxWidth: 296 },
   promises: { marginTop: 34, display: 'flex', flexDirection: 'column', gap: 12 },
   promise: { display: 'flex', alignItems: 'center', gap: 11, fontSize: 13.5, fontWeight: 600, color: colors.text70 },
-  actions: { marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 30 },
+  // Owns the bottom safe-area inset itself — Screen no longer pads for it.
+  actions: { marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 32, paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', flex: 'none' },
   cta: { height: 56, border: 0, borderRadius: 16, background: colors.accent, color: colors.white, fontSize: 15.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', boxShadow: shadow.accent, transition: 'background ' + motion.fast },
   legal: { margin: '8px 2px 0', fontSize: 11.5, fontWeight: 500, lineHeight: 1.5, color: colors.textFaint, textAlign: 'center' },
 };

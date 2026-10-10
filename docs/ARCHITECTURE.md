@@ -9,19 +9,25 @@ slot into later.
 
 | | |
 |---|---|
-| **Status** | Rev B — decisions settled, implementation starting |
+| **Status** | Rev B — phases 0 and 1 implemented; BLE verified between two handsets; phase 2 now needs the endurance spike, not first contact |
 | **Stack** | Qt 6.11 / C++17 · Vite + React 19 + TS · native BLE GATT · Noise XX |
-| **Target** | Android first, iOS ready |
+| **Target** | **Android only for v1.** iOS is explicitly deprioritised — the seam stays honest, but nothing is scheduled |
 | **Presentation copy** | https://claude.ai/code/artifact/63c17bd1-b80a-4163-a903-31164487e9c8 |
 
 ---
 
 ## 01 · Scope & constraints
 
-**Version 1 is text-only, offline-only, one-to-one.** Two people in Bluetooth range
-discover each other, one sends a request, the other accepts, and they chat. No images,
-no video, no voice, no group chats, no internet. An account is a username, date of birth
+**Version 1 is text and photos, offline-only, one-to-one.** Two people in Bluetooth
+range discover each other, one sends a request, the other accepts, and they chat —
+text, and photos downscaled to fit `kMaxMediaBytes`, carried over Nearby Connections
+where it is available and over BLE otherwise (see [TRANSPORTS.md](TRANSPORTS.md)). No
+video, no voice, no group chats, no internet. An account is a username, date of birth
 and gender, created on the device and registered nowhere.
+
+> *Revised:* this section originally said text-only. Photos were built for phase 5 and
+> are **in v1** by decision — which makes testing them on real handsets a release
+> blocker rather than an extra.
 
 ### The three rules everything derives from
 
@@ -65,10 +71,10 @@ JavaScript bridge.
 | AD-03 | Hand-rolled HTTP and SSE on `QTcpServer` | Decided |
 | AD-04 | Our own protocol identity, bitchat-derived design | Decided |
 | AD-05 | Identity is a keypair; the username is only a label | Decided |
-| AD-06 | Noise XX from an existing library, behind our own interface | Decided |
+| AD-06 | Vendored Monocypher primitives; Noise XX still to come | **Revised** |
 | AD-07 | The loopback transport is a deliverable, not a test double | Decided |
 | AD-08 | The local API is gated by a secret path prefix, not a bearer token | Decided |
-| AD-09 | Multi-hop relay: build the fields now, enable the behaviour later | **Open** |
+| AD-09 | Multi-hop relay: fields built, behaviour not written | **Deferred — low priority, v1 is direct-range only** |
 
 ### AD-01 — Protocol and mesh logic live in C++
 
@@ -142,13 +148,32 @@ bitchat's model. Usernames are display strings and may collide; the UI disambigu
 a short fingerprint suffix such as `@vinay·4f2a`. The `/account/username-available`
 endpoint in the UI draft is removed.
 
-### AD-06 — Noise XX from an existing library
+### AD-06 — Vendored Monocypher primitives; Noise XX still to come *(revised)*
 
-[noise-c](https://github.com/rweather/noise-c) is MIT-licensed plain C with a libsodium
-backend, so we get a reviewed handshake state machine instead of a hand-written one. It
-sits behind `ISecureSession`, so swapping it for a focused in-house XX implementation
-later touches nothing above the seam. Validate either choice against the published Noise
-test vectors.
+The original plan was noise-c over libsodium. Two things changed it:
+
+**libsodium is a build project of its own.** Cross-compiling it for the NDK, for four
+ABIs, is real work that would have blocked everything behind it.
+[Monocypher](https://monocypher.org) 4.0.2 is four files, dual BSD-2-Clause / CC-0, and
+explicitly designed to be dropped into a source tree. It is vendored at
+`third_party/monocypher/` and gives us X25519, Ed25519 (RFC 8032), ChaCha20-Poly1305 and
+BLAKE2b.
+
+**Identity crypto and session crypto are separable, and identity was urgent.**
+`MonocypherIdentityStore` is live now: real Ed25519 announce signatures, real X25519
+keys, and a `PeerId` derived from a genuine public key. Before this, "signatures" were a
+keyed hash anyone holding the public key could forge, so announce authenticity was
+decorative. `tests/IdentityTests.cpp` asserts forgery is rejected six different ways.
+
+**What is still owed.** The Noise XX handshake itself. Monocypher supplies every
+primitive it needs, but Noise is a state machine with its own HKDF chaining and message
+patterns, and it deserves a focused pass validated against published test vectors —
+not a rushed corner of a multi-module change. `ISecureSession` is unchanged, so this
+lands without touching anything above the seam. Until then `NullSessionFactory` fails
+loudly rather than pretending to encrypt.
+
+Also outstanding: secret keys are stored unencrypted. Wrapping them with the Android
+Keystore is the remaining half of section 10 and changes only the identity adapter.
 
 ### AD-07 — The loopback transport is a deliverable
 
@@ -192,12 +217,27 @@ the page after load can be read back out by anything that fetches `index.html` f
 256-bit path prefix chosen at launch is unguessable, is known to the WebView because C++
 hands it the URL, and needs no injection step. See section 10.
 
-### AD-09 — Multi-hop relay *(open)*
+### AD-09 — Multi-hop relay *(deferred — LOW PRIORITY for v1)*
 
-The packet header carries TTL and the dedup cache exists from phase 1, so turning relay on
-is a policy flip rather than a format change. Whether v1 actually relays or stays
-direct-range deserves a decision on evidence, because relaying multiplies both battery cost
-and test surface. **Lean: direct-only for the first release.**
+**Decided: v1 is direct-range only.** You can reach people your own radio can hear, and
+nobody else.
+
+**Be precise about what exists**, because the earlier wording here caused a real
+misreading. The *groundwork* is built: the header carries a TTL set on every outgoing
+packet, the LRU dedup cache is live and consulted on every inbound frame, and
+`addressedToUs()` already separates our traffic from everyone else's. The *behaviour* is
+not: `MeshEngine::maybeRelay()` is an empty stub that is **never called**, and
+`handlePacket()` drops packets addressed elsewhere. Setting `relayEnabled_ = true` changes
+nothing.
+
+Enabling relay is therefore a feature, not a flag. It needs TTL decrement, the dense-graph
+clamp, re-broadcast to every other link, and a call site — plus the test surface that comes
+with it.
+
+Why it is deferred rather than done: every device would forward traffic for strangers,
+roughly doubling battery cost, and multi-hop is very hard to test honestly without many
+handsets in a real room. The format is ready whenever the evidence justifies it, which is
+the part that was worth building early.
 
 ---
 
@@ -325,21 +365,52 @@ Every route sits under the secret prefix, written here as `/{t}`.
 |---|---|
 | `GET /{t}/api/account` | Current account, or 404 before setup |
 | `POST /{t}/api/account` | Create account — generates the keypair |
-| `PATCH /{t}/api/account` | Update label, discoverability, who may send requests |
+| `PATCH /{t}/api/account` | Update label, discoverability, who may send requests. Takes effect on the radio immediately — the next announce carries the new name |
+| `GET /{t}/api/bluetooth` | Radio state as the platform sees it (`on`/`off`/`unauthorized`/`unsupported`) and whether an in-app enable prompt exists |
+| `POST /{t}/api/bluetooth/enable` | Raise the system enable (or permission) prompt; returns before the user answers |
+| `POST /{t}/api/bluetooth/settings` | Open the system Bluetooth settings |
 | `POST /{t}/api/discovery` | Start advertising and scanning |
 | `DELETE /{t}/api/discovery` | Stop the radio |
-| `GET /{t}/api/discovery/peers` | Currently reachable peers with RSSI band |
+| `GET /{t}/api/discovery/peers` | Currently reachable peers with RSSI band, plus `status` (`none`/`requested`/`declined`/`contact`), `canResend`, and `chatId` when they are a contact |
 | `POST /{t}/api/requests` | Send a chat request to a peer id |
 | `GET /{t}/api/requests` | Inbound requests awaiting a decision |
 | `POST /{t}/api/requests/:id/accept` | Accept — pins their static key, creates the chat |
 | `POST /{t}/api/requests/:id/decline` | Decline, optionally block |
 | `GET /{t}/api/chats` | Chat list with last message and unread count |
+| `GET /{t}/api/chats/:id` | One chat row, so a chat screen can name its peer without loading the list |
 | `GET /{t}/api/chats/:id/messages` | Paged history, `?before=` cursor |
 | `POST /{t}/api/chats/:id/messages` | Enqueue a message; returns immediately as `queued` |
+| `POST /{t}/api/chats/:id/media` | Enqueue an image. The image is the raw request **body**; `clientMessageId` and `caption` ride in the query string |
+| `GET /{t}/api/media/:id` | The decrypted image bytes |
+| `POST /{t}/api/messages/:id/retry` | Resend one of our messages that reached `failed`. Refused for anything else, and while the contact is blocked |
+| `GET /{t}/api/blocked` | The block list, newest first, each with the best name held for it |
+| `POST /{t}/api/blocked` | Block a peer id. Also declines any request they have waiting |
+| `DELETE /{t}/api/blocked/:peerId` | Unblock |
 | `GET /{t}/api/events` | **SSE stream** — the push channel |
 
+> **Two rules the media routes follow, both security-shaped.**
+>
+> The image is the raw body rather than base64 inside JSON — a third less memory and
+> parse time on every upload, which matters because the parser buffers the whole body
+> before dispatch (`kMaxRequestBodyBytes` is therefore also the most memory one
+> unauthenticated request can make the process allocate).
+>
+> And the response `Content-Type` is **sniffed from the bytes, never taken from the
+> caller**. These responses render inside our own WebView at the API's own origin; a
+> caller-named type would let a stored blob be served back as `text/html` and run as
+> script against the one origin that can read every chat.
+
 SSE event names: `peer.discovered`, `peer.lost`, `request.received`, `request.accepted`,
-`message.received`, `message.status`, `radio.state`.
+`request.declined`, `message.received`, `message.status`, `radio.state`.
+
+> **`peer.discovered` is a sighting, not a status.** `SseHub` cannot see the request gate —
+> reaching for it from an HTTP adapter would invert the layering — so the status fields on
+> that event are neutral placeholders and the Nearby screen refetches instead of merging
+> them. Merging would re-announce an accepted contact as a stranger.
+>
+> **`request.declined` carries `peerId` as well as `id`**, because the Nearby screen keys on
+> peers rather than request ids and would otherwise have no way to tell which row to offer
+> again.
 
 ---
 
@@ -355,12 +426,18 @@ flowchart TB
     IT{{"ITransport — one interface, every radio"}}
     IT --> BLE["BleGatt<br/><i>Java + JNI</i><br/>Low · mesh"]
     IT --> LB["Loopback<br/><i>local sockets</i><br/>desktop dev"]
-    IT -.-> NC["NearbyConn<br/><i>Java + JNI</i><br/>High · bulk"]
+    IT --> NC["NearbyConn<br/><i>Java + JNI</i><br/>High · bulk"]
     IT -.-> MP["Multipeer<br/><i>Objective-C++</i><br/>High · bulk"]
     IT -.-> NET["Internet<br/><i>WebSocket</i><br/>High · no mesh"]
 ```
 
 Solid = ships in v1. Dashed = added later as a new class, with no core changes.
+
+> **Nearby Connections is now solid: it shipped as a new class and the core did not
+> change.** That was the claim this seam was built to make true, and it held —
+> `RoutingPolicy` selected it with no edit at all. The one thing that did have to change
+> was a bug the seam had been hiding: `PayloadClass` never reached the policy, so `Bulk`
+> was unreachable. See [TRANSPORTS.md](TRANSPORTS.md) §04.
 
 ### The handoff pattern
 
@@ -395,13 +472,13 @@ properties make it possible:
 +---------------------------------------------------------------+
 |   recipient id — 8 bytes, absent when broadcast (flag bit 0)  |
 +---------------------------------------------------------------+
-| payload length (u16) | payload … (Noise ciphertext if directed)|
+| payload length (u32) | payload … (Noise ciphertext if directed)|
 +---------------------------------------------------------------+
 |        [ Ed25519 signature — 64 bytes, ANNOUNCE only ]        |
 +---------------------------------------------------------------+
 ```
 
-Fixed header is 12 bytes, plus 8 for the recipient on directed packets.
+Fixed header is 16 bytes, plus 8 for the recipient on directed packets.
 
 ### Parameters, and where they come from
 
@@ -409,7 +486,7 @@ Fixed header is 12 bytes, plus 8 for the recipient on directed packets.
 |---|---|---|
 | Initial TTL | 7 | bitchat's figure; clamped to 5 on dense graphs of 6+ links |
 | Dedup cache | 1000 entries / 5 min | LRU keyed on sender, timestamp, type, payload digest |
-| Fragment payload | ~180 B | Deliberately below bitchat's 469 — see section 11 |
+| Fragment payload | 480 B | Fits one 512-octet ATT write; see section 11. Was 180, which wasted most of every write |
 | Reassembly limit | 128 concurrent / 30 s | Bounded so a hostile peer cannot exhaust memory |
 | Announce, isolated | every 4 s | Fast discovery when nobody is around |
 | Announce, connected | 15–30 s jittered | Backs off once peers are known; jitter avoids sync storms |
@@ -510,10 +587,31 @@ order.
 
 | Property | Mechanism |
 |---|---|
-| **Confidentiality** | Every directed payload rides inside a Noise XX session — X25519, ChaCha20-Poly1305, SHA-256. Relays forward opaque ciphertext. Encrypted packets padded into 256/512/1024/2048-byte buckets |
+| **Confidentiality** | Every directed payload rides inside a Noise XX session — X25519, ChaCha20-Poly1305, SHA-256. Relays forward opaque ciphertext. Plaintext is padded to 256/512/1024/2048-byte buckets before encryption — see below |
 | **Authenticity** | Announces carry an Ed25519 signature. Accepting a request pins the peer's static key to the contact |
 | **At rest** | Message bodies encrypted with a key held in the Android Keystore, reached over JNI. Identity keypair wrapped the same way. Panic wipe clears both |
 | **Still observable** | Announces are cleartext by design — a passive listener learns nicknames, public keys and rough presence. Inherent to open discovery; state it plainly in privacy copy |
+
+> **Padding — done, inside the encryption (protocol v3).** Every app payload is padded
+> *before* Noise encrypts it: `[ real length : u32 ][ plaintext ][ zero fill ]`, sized to
+> the next bucket (`protocol::padPlaintext`). A one-letter reply and a 250-byte paragraph
+> are then the same size on the air. The receiver strips it after decrypting, and drops
+> any NoiseMessage not flagged as padded, so the property cannot silently regress on one
+> side.
+>
+> Inside, not after, on purpose: filler appended to the ciphertext would need
+> cryptographic randomness — which the pure core has no port for — or a run of zeros
+> would mark exactly where the real message ended. Encrypted zeros are indistinguishable
+> from the rest. This is also what the Noise specification recommends.
+>
+> **What it does not hide.** Above the largest bucket, sizes round up to a multiple of
+> 2 KB, so a photo's exact byte count is private but its rough size is not: 150 KB of
+> fragments is visibly more than one packet. Hiding that would mean padding every photo
+> to `kMaxMediaBytes`, minutes of BLE airtime each. Cleartext packets — announce, ack,
+> handshake — also travel at natural length; they carry nothing private.
+>
+> The wire changed, so `kProtocolVersion` went to 3 and older test builds reject newer
+> frames cleanly instead of misreading them. Reinstall every test handset together.
 
 ### On localhost — the part bitchat never had to solve
 
@@ -621,9 +719,23 @@ is reachable because a signed `ANNOUNCE` arrived inside the last 60 seconds, and
 missed announces mark it lost. Link events become a resource-management concern rather than
 a correctness one, on both platforms, for free.
 
-Two related rules: **never query MTU to size fragments** — use a fixed conservative ~180
-bytes — and advertise only the service UUID plus the peer id, because the advertising
-payload is capped at 29 usable bytes on Android regardless of who writes the code.
+Two related rules: **never query MTU to size fragments** — use a fixed size — and
+advertise only the service UUID plus the peer id, because the advertising payload is
+capped at 29 usable bytes on Android regardless of who writes the code.
+
+> **The fixed size is 480 bytes, not 180.** These are two different concerns that were
+> previously conflated. The *frame size* is how big a protocol packet may be; the *MTU*
+> decides how many BLE writes carrying it cost. Android negotiates a 517-byte MTU and the
+> Bluetooth specification caps one attribute write at **512 octets**, so 480 bytes plus
+> BleRadio's 2-byte length prefix lands inside a single write. At 180 the radio still made
+> nine writes per frame on a 20-byte default link and wasted most of every large one.
+>
+> This does not reintroduce MTU-derived sizing: 480 is a constant, chosen once, and a
+> link that never negotiates up simply chunks more. Keep it under 510.
+>
+> `BleRadio.usableChunk()` clamps to 512 explicitly — `mtu - 3` on a 517-byte MTU computes
+> 514, and writing that gets silently truncated by the peer stack, which desynchronises
+> the frame stream rather than failing loudly.
 
 ---
 
@@ -646,6 +758,9 @@ chat         id · peer_id (FK) · created_at · last_message_at · unread
 
 message      id · chat_id (FK) · client_msg_id · direction
              body_encrypted · status · created_at · delivered_at · read_at
+             media_id · media_mime · media_bytes        -- schema v2
+
+media        id · byte_count · created_at · bytes_encrypted   -- schema v2
 
 outbox       message_id (FK) · peer_id · attempts · next_attempt_at
              expires_at · payload_encrypted
@@ -665,6 +780,20 @@ that the SQLite driver plugin must be deployed with the app, a known Android pac
 annoyance. The amalgamation is a single public-domain C file with no plugin step. Either
 sits behind `IMessageRepository`, so this is reversible — start with Qt Sql and switch only
 if deployment bites.
+
+> **Resolved: Qt Sql.** `adapters/persistence/sqlite/SqliteStore.cpp` implements all four
+> repository ports at schema v1. The deployment wrinkle did not bite — linking `Qt6::Sql`
+> is enough for `androiddeployqt` to bundle the driver, and the built APK contains
+> `lib/arm64-v8a/libplugins_sqldrivers_qsqlite_arm64-v8a.so`. Verify that entry is present
+> after any change to the link line, because a missing driver fails at *runtime* with
+> "Driver not loaded" rather than at build time.
+>
+> Two deviations from the sketch above, both deliberate. The `account` table holds public
+> keys only — `static_sk_wrapped` predates the identity-store split, and secret material
+> now lives solely in `IIdentityStore` (AD-05). And blocks live in their own `blocked`
+> table rather than a `contact.blocked_at` column, because declining a request with *block*
+> blocks a peer who is usually not a contact at all; keying it on the contact row would
+> silently drop them.
 
 ---
 
@@ -767,7 +896,7 @@ cause of install abandonment. We do not derive location, so we are entitled to d
 | **2** | **The radio.** `BleRadio.java`, its JNI binding and the thread hop. *Open with the endurance spike.* Direct range only | The device ceiling on concurrent links, and that the JNI thread hop is correct under load |
 | **3** | **Reliability.** Fragmentation over real MTUs, dedup cache, announce backoff, outbox drain on reappearance. Relay behind a flag (AD-09) | That it works in a room, not just on a bench |
 | **4** | **Hardening.** Duty-cycled scanning, battery profiling, permission and onboarding UX, block and report, at-rest encryption, panic wipe | Shippability |
-| **5** | **Reach.** Bulk transports — Nearby Connections, then Multipeer with the iOS port. Internet transport. Images and video | That the transport seam was worth building |
+| **5** | **Reach.** Nearby Connections **implemented** as the bulk transport — see [TRANSPORTS.md](TRANSPORTS.md). Still open: internet transport, video. *Multipeer and the iOS port are deprioritised: v1 ships Android only* | That the transport seam was worth building |
 
 > **The phase 2 spike is throwaway on purpose.** Two or three handsets, each advertising,
 > scanning, connecting to everything it finds, and sending a **sequence-numbered** counter
@@ -784,9 +913,9 @@ cause of install abandonment. We do not derive location, so we are entitled to d
 
 ## 16 · Still open
 
-1. **Relay in v1?** (AD-09) The header carries TTL from day one, so this is a policy flip.
-   Direct-only halves the phase 3 test surface and materially improves battery life.
-   *Lean: ship direct-only, enable relay in 1.1.*
+1. ~~**Relay in v1?**~~ **Settled: no.** (AD-09) Direct-range only. The TTL and dedup
+   groundwork stays, but the forwarding behaviour is unwritten and is low priority —
+   it is a feature to build, not a flag to flip.
 2. **How long do messages live?** Forever, or a rolling window? Much easier to answer
    before the schema ships than after.
 3. **Group chats, ever?** Not in v1 — but if the answer is eventually yes, the envelope
