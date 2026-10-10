@@ -82,7 +82,12 @@ android {
 
     tasks.withType(JavaCompile) {
         options.incremental = true
-        options.compilerArgs += ['-Xlint:all']
+        // -classfile is switched off for one reason: Play Services class files
+        // carry Google's internal @RestrictedInheritance annotation, which is in
+        // no published artifact, so javac warns "Cannot find annotation method
+        // 'explanation()'" on every build and Qt Creator lists each one as an
+        // error. Nothing on our side can satisfy it; every other lint stays on.
+        options.compilerArgs += ['-Xlint:all', '-Xlint:-classfile']
     }
 
     compileOptions {
