@@ -125,8 +125,25 @@ void installQtMessageBridge()
 
 void shutdown()
 {
+    // FLUSH, DO NOT DESTROY.
+    //
+    // This used to call spdlog::shutdown(), which drops the default logger and
+    // leaves default_logger_raw() null. main() called it before returning, and
+    // its locals are destroyed AFTER that: ~LocalHttpServer deletes the open SSE
+    // socket, the socket emits disconnected(), SseHub logs "event stream
+    // closed" — through a null logger. Every exit of the app with the page open
+    // was a SIGSEGV at 0x38 inside spdlog::logger::should_log, on both test
+    // handsets.
+    //
+    // Nothing here needs destroying. The loggers are synchronous, so there is no
+    // worker thread to join, and the registry releases the sinks itself at
+    // process exit. Keeping the logger alive means a destructor, a late Qt
+    // message or a radio callback on another thread can still log safely.
+    spdlog::logger* logger = spdlog::default_logger_raw();
+    if (logger == nullptr) return;
+
     AT_LOG_INFO("log", "shutting down");
-    spdlog::shutdown();
+    logger->flush();
 }
 
 QString currentLogFile()

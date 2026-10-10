@@ -36,7 +36,10 @@ bool initialise(const LogConfig&);
 /// so Qt's own warnings land in the file next to ours instead of vanishing.
 void installQtMessageBridge();
 
-/// Flushes and releases every sink. Call before exit.
+/// Flushes every sink. Call before exit.
+///
+/// The logger deliberately stays usable afterwards: objects destroyed after
+/// this call still log from their destructors.
 void shutdown();
 
 /// Absolute path of the active log file, or empty when there is none.

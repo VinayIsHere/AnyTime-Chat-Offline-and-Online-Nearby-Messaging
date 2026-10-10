@@ -18,6 +18,7 @@ add_executable(anytime_tests
     RoutingPolicyTests.cpp
     PeerPresentationTests.cpp
     ServiceTests.cpp
+    LoggingTests.cpp
     TestHarness.h
 )
 
@@ -35,6 +36,7 @@ target_sources(anytime_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/adapters/persistence/sqlite/MonocypherDataCipher.cpp
     ${CMAKE_SOURCE_DIR}/adapters/codec/QtCborCodec.cpp
     ${CMAKE_SOURCE_DIR}/adapters/notify/Notifier.cpp
+    ${CMAKE_SOURCE_DIR}/adapters/logging/LogSetup.cpp
 )
 
 set_target_properties(anytime_tests PROPERTIES AUTOMOC OFF)

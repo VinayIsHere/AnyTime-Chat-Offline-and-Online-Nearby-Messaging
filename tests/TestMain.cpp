@@ -17,6 +17,7 @@ void runMediaEnvelopeTests(Registry&);
 void runRoutingPolicyTests(Registry&);
 void runPeerPresentationTests(Registry&);
 void runServiceTests(Registry&);
+void runLoggingTests(Registry&);
 }  // namespace anytime::test
 
 int main(int argc, char* argv[])
@@ -43,6 +44,9 @@ int main(int argc, char* argv[])
     anytime::test::runRoutingPolicyTests(registry);
     anytime::test::runPeerPresentationTests(registry);
     anytime::test::runServiceTests(registry);
+    // Last: it installs its own default logger, which would otherwise undo the
+    // silencing above for every suite after it.
+    anytime::test::runLoggingTests(registry);
 
     return registry.report();
 }
