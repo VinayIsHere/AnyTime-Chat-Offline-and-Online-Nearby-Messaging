@@ -15,6 +15,7 @@
 #include <QTextStream>
 
 #include <cstdio>
+#include <cstdlib>
 
 #ifdef ANYTIME_USE_WEBVIEW
 #include <QQmlApplicationEngine>
@@ -130,9 +131,10 @@ void printBanner(const QString& instance, const QString& url, const QString& url
 }
 #endif
 
-}  // namespace
-
-int main(int argc, char* argv[])
+/// Everything the app does, start to finish. Separate from main() so that every
+/// object below is destroyed — the database closed, the log flushed — BEFORE
+/// main() decides how the process leaves. See main().
+int runApp(int argc, char* argv[])
 {
     // First, so nothing Qt prints during start-up bypasses the logger. Until
     // initialise() runs below, spdlog's default console logger catches it.
@@ -386,4 +388,34 @@ int main(int argc, char* argv[])
     server.stop();
     logging::shutdown();
     return rc;
+}
+
+}  // namespace
+
+int main(int argc, char* argv[])
+{
+    const int rc = runApp(argc, argv);
+
+#ifdef Q_OS_ANDROID
+    // LEAVE WITHOUT RUNNING STATIC DESTRUCTORS.
+    //
+    // Returning from main() hands control back to Qt's Android plugin, which
+    // calls exit(). exit() runs every global destructor in the process while
+    // the platform's own threads are still alive — and on Android 16 libgui's
+    // fence-monitor threads ("HWC release" and friends) are then waiting on
+    // mutexes that have just been destroyed:
+    //
+    //     FORTIFY: pthread_mutex_lock called on a destroyed mutex
+    //
+    // which aborts the process. The app had already shut down cleanly by then,
+    // so the user lost nothing, but Android recorded a native crash every time
+    // the app was swiped away.
+    //
+    // _Exit ends the process without that step. Nothing is skipped that
+    // matters: runApp() has returned, so all of our own objects are already
+    // destroyed in order, and the kernel reclaims the rest.
+    std::_Exit(rc);
+#else
+    return rc;
+#endif
 }
