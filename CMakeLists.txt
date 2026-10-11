@@ -336,7 +336,7 @@ if(ANYTIME_BUILD_APP)
         set_property(TARGET anytime APPEND PROPERTY
             QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/platform/android")
         set_property(TARGET anytime PROPERTY
-            QT_ANDROID_PACKAGE_NAME "org.anytimechat.app")
+            QT_ANDROID_PACKAGE_NAME "org.techyskitter.anytimechat.app")
 
         # versionCode must increase monotonically for Play. major*100 + minor
         # gives a sane ladder as long as minor stays under 100.

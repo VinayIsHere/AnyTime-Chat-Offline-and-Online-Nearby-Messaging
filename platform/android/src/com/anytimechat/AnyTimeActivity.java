@@ -15,7 +15,7 @@ import android.webkit.WebView;
 
 import androidx.core.content.FileProvider;
 
-import org.anytimechat.app.R;
+import org.techyskitter.anytimechat.app.R;
 import org.qtproject.qt.android.bindings.QtActivity;
 
 import java.io.File;

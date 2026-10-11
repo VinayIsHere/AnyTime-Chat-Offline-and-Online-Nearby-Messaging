@@ -854,7 +854,7 @@ AnytimeChat/
 
 ```mermaid
 flowchart LR
-    subgraph PROC["ONE ANDROID PROCESS — org.anytimechat.app"]
+    subgraph PROC["ONE ANDROID PROCESS — org.techyskitter.anytimechat.app"]
         direction LR
         ACT["QtActivity<br/>hosts QtWebView<br/><br/><i>Android WebView</i><br/><i>React bundle from</i><br/><i>127.0.0.1/&lt;token&gt;/</i>"]
         CPP["Qt native · C++<br/>core services + protocol<br/>QTcpServer + SSE hub<br/>BleGattTransport<br/>SQLite + outbox<br/><br/><b>all application logic</b>"]

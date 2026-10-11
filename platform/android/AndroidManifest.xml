@@ -5,6 +5,20 @@
     Qt fills the %%INSERT_*%% placeholders from CMake at package time; the
     version code/name come from PROJECT_VERSION in the root CMakeLists.
 
+    EDIT THIS FILE AS TEXT. DO NOT SAVE IT FROM QT CREATOR'S MANIFEST EDITOR.
+    That editor rewrites the whole file from its form, and what it writes
+    breaks the build and the app:
+      - it adds package="" to the manifest tag, which the Android Gradle plugin
+        refuses ("Setting the namespace via the package attribute ... is no
+        longer supported");
+      - it drops android:icon from the application and android:theme from the
+        activity, because its own form fields for them are empty — losing the
+        launcher icon, the launch splash and the status-bar styling;
+      - it duplicates the splash meta-data.
+    There is also nothing to set there: THE PACKAGE NAME IS NOT IN THIS FILE.
+    It is QT_ANDROID_PACKAGE_NAME in the root CMakeLists.txt, which Qt passes
+    to Gradle as both the namespace and the application id.
+
     Permission set is documented in docs/ARCHITECTURE.md section 14. The split
     below is not optional: Qt 6.11 targets minSdk 28, and the BLUETOOTH_SCAN /
     ADVERTISE / CONNECT permissions only exist from API 31. On 28-30 the legacy

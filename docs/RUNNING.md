@@ -235,7 +235,7 @@ its own tags:
 
 ```bash
 adb logcat -s AnyTime AnyTimeBle AnyTimeMesh AnyTimePermissions
-adb shell run-as org.anytimechat.app cat files/logs/anytime.log
+adb shell run-as org.techyskitter.anytimechat.app cat files/logs/anytime.log
 ```
 
 The Java tags follow the same split by build: `debug` lines only in a debuggable
@@ -296,7 +296,7 @@ localStorage.removeItem('anytime.devmock.account'); location.reload()
 ## Android
 
 Packaging is complete and **an APK has been built and verified** — 20 MB,
-`org.anytimechat.app`, containing `lib/arm64-v8a/libanytime_arm64-v8a.so`,
+`org.techyskitter.anytimechat.app`, containing `lib/arm64-v8a/libanytime_arm64-v8a.so`,
 `assets/www/index.html` and the React bundle, with all ten permissions present.
 
 `platform/android/` holds the manifest, the Gradle build, the theme and the
