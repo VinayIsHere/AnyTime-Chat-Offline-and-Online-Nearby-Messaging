@@ -239,6 +239,7 @@ if(ANYTIME_BUILD_APP)
         adapters/http/JsonMapping.h
         adapters/identity/MonocypherIdentityStore.h
         adapters/logging/LogSetup.h
+        adapters/support/SupportLinks.h
         adapters/persistence/settings/SettingsStore.h
         adapters/persistence/sqlite/SqliteStore.h
         adapters/persistence/sqlite/MonocypherDataCipher.h
@@ -259,6 +260,7 @@ if(ANYTIME_BUILD_APP)
         adapters/http/JsonMapping.cpp
         adapters/identity/MonocypherIdentityStore.cpp
         adapters/logging/LogSetup.cpp
+        adapters/support/SupportLinks.cpp
         adapters/notify/Notifier.cpp
         adapters/persistence/settings/SettingsStore.cpp
         adapters/persistence/sqlite/SqliteStore.cpp
@@ -302,8 +304,10 @@ if(ANYTIME_BUILD_APP)
     # Qt6::Sql backs the repositories (section 12). Its QSQLITE driver is a
     # plugin, which androiddeployqt bundles because this target links the module
     # — that plugin step is the one wrinkle the architecture doc warns about.
+    # Qt6::Gui is for QDesktopServices: the report route hands a mail draft to
+    # the phone's mail app, and the links route opens our pages in the browser.
     target_link_libraries(anytime_adapters
-        PUBLIC anytime_core Qt6::Core Qt6::Network Qt6::Sql monocypher
+        PUBLIC anytime_core Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql monocypher
     )
 
     qt_add_executable(anytime app/main.cpp)

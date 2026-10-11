@@ -134,6 +134,8 @@ const SHEET = [
   '@keyframes at-blink{0%,49%{opacity:1}50%,100%{opacity:0}}',
   '@keyframes at-spin{to{transform:rotate(360deg)}}',
   '@keyframes at-logoIn{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}',
+  '@keyframes at-fadeIn{from{opacity:0}to{opacity:1}}',
+  '@keyframes at-sheetIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}',
 ].join('');
 
 /** Injects the token + keyframe stylesheet once. Called from App. */

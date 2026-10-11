@@ -24,6 +24,7 @@ vi.mock('../api/client', async (importOriginal) => {
       blockPeer: vi.fn(),
       unblockPeer: vi.fn(),
       sendMedia: vi.fn(),
+      reportPeer: vi.fn(),
       mediaUrl: (id: string) => '/media/' + id,
     },
   };
@@ -306,5 +307,39 @@ describe('ChatScreen — the receipt on a message that has not gone yet', () => 
     openChat({ ...CHAT, reachable: false }, [message({ status: 'queued' })]);
     expect(await screen.findByText(/Queued/)).toBeInTheDocument();
     expect(screen.queryByText(/Sending/)).not.toBeInTheDocument();
+  });
+});
+
+describe('ChatScreen — reporting a contact', () => {
+  it('reports from the chat menu, and the chat ends up blocked', async () => {
+    mocked.reportPeer.mockResolvedValue({ emailOpened: true, email: 'contact@techyskitter.com' });
+    openChat();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Chat options' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: /Report @alice·6677/ }));
+
+    // The menu gives way to the sheet rather than sitting behind it.
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    const sheet = screen.getByRole('dialog', { name: 'Report @alice·6677' });
+    expect(sheet).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Harassment or threats' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Report and block' }));
+
+    expect(mocked.reportPeer).toHaveBeenCalledWith('0011223344556677', 'harassment');
+    expect(await screen.findByText('@alice·6677 is blocked')).toBeInTheDocument();
+    // Behind the sheet the composer has already given way to the blocked bar.
+    expect(screen.queryByPlaceholderText('Message')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText(/You blocked @alice·6677/)).toBeInTheDocument();
+  });
+
+  it('can report someone who is already blocked', async () => {
+    openChat({ ...CHAT, blocked: true });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Chat options' }));
+    expect(screen.getByRole('menuitem', { name: /Report @alice·6677/ })).toBeInTheDocument();
   });
 });

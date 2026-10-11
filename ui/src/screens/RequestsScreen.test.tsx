@@ -20,6 +20,7 @@ vi.mock('../api/client', async (importOriginal) => {
       getRequests: vi.fn(),
       acceptRequest: vi.fn(),
       declineRequest: vi.fn(),
+      reportPeer: vi.fn(),
     },
   };
 });
@@ -85,5 +86,26 @@ describe('RequestsScreen — declining and blocking', () => {
     bus.current!.emit('request.received', REQUEST);
 
     expect(await screen.findByRole('button', { name: 'Decline and block' })).toBeInTheDocument();
+  });
+});
+
+describe('RequestsScreen — reporting a request', () => {
+  it('reports the sender, and their request leaves the list', async () => {
+    mocked.reportPeer.mockResolvedValue({ emailOpened: true, email: 'contact@techyskitter.com' });
+    renderAt(<RequestsScreen />, '/requests');
+
+    await userEvent.click(within(await card()).getByRole('button', { name: 'Report @mallory·eeff' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Child safety concern' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Report and block' }));
+
+    expect(mocked.reportPeer).toHaveBeenCalledWith('8899aabbccddeeff', 'child_safety');
+    // Reporting blocks, and a blocked person's request is gone — no separate
+    // decline call is made for it.
+    expect(mocked.declineRequest).not.toHaveBeenCalled();
+    expect(await screen.findByText('@mallory·eeff is blocked')).toBeInTheDocument();
+    expect(screen.getByText('No requests yet')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

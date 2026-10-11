@@ -19,6 +19,7 @@ add_executable(anytime_tests
     PeerPresentationTests.cpp
     ServiceTests.cpp
     LoggingTests.cpp
+    SupportLinksTests.cpp
     TestHarness.h
 )
 
@@ -37,6 +38,7 @@ target_sources(anytime_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/adapters/codec/QtCborCodec.cpp
     ${CMAKE_SOURCE_DIR}/adapters/notify/Notifier.cpp
     ${CMAKE_SOURCE_DIR}/adapters/logging/LogSetup.cpp
+    ${CMAKE_SOURCE_DIR}/adapters/support/SupportLinks.cpp
 )
 
 set_target_properties(anytime_tests PROPERTIES AUTOMOC OFF)

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Bluetooth, Lock, ShieldCheck, ChevronRight, Sun, Moon, Monitor, Check } from 'lucide-react';
+import { Bluetooth, Lock, ShieldCheck, ChevronRight, Sun, Moon, Monitor, Check, ShieldAlert, FileText, ExternalLink as ExternalLinkIcon } from 'lucide-react';
 import Screen from '../components/Screen';
 import BottomNav from '../components/BottomNav';
 import { colors, motion, shadow, applyThemeMode, getThemeMode, ThemeMode } from '../theme/theme';
-import { api, ApiError, type AcceptFrom, type Account, type BlockedPeer } from '../api/client';
+import { api, ApiError, type AcceptFrom, type Account, type BlockedPeer, type ExternalLink } from '../api/client';
 import { isValidUsername, sanitizeUsername, USERNAME_HINT } from '../config/username';
 
 const MODES: Array<{ id: ThemeMode; label: string; Icon: typeof Sun }> = [
@@ -95,6 +95,23 @@ export default function ProfileScreen() {
       setBlocked((list) => (list ? list.filter((b) => b.peerId !== peer.peerId) : list));
     } catch {
       setError('Could not unblock ' + peer.handle + '.');
+    }
+  }
+
+  /**
+   * Opens one of our pages in the phone's browser. These are the only two
+   * things on this screen that need the internet, and the rows say so — the
+   * rest of the app works without it.
+   */
+  async function openLink(link: ExternalLink) {
+    setError('');
+    try {
+      const result = await api.openLink(link);
+      if (!result.opened) {
+        setError('No browser opened. You can find the page at ' + result.url.replace('https://', '') + '.');
+      }
+    } catch {
+      setError('Could not open that page.');
     }
   }
 
@@ -278,6 +295,26 @@ export default function ProfileScreen() {
             </div>
           )}
         </div>
+
+        <div style={profileStyles.card}>
+          <button style={profileStyles.rowButton} onClick={() => openLink('child-safety')}>
+            <ShieldAlert size={19} strokeWidth={2} color={colors.text60} />
+            <span style={profileStyles.rowText}>
+              <span style={profileStyles.rowTitle}>Safety and reporting</span>
+              <span style={profileStyles.rowSub}>How to report someone, and our child safety standards</span>
+            </span>
+            <ExternalLinkIcon size={15} strokeWidth={2.2} color={colors.text35} style={profileStyles.out} />
+          </button>
+          <div style={profileStyles.divider} />
+          <button style={profileStyles.rowButton} onClick={() => openLink('privacy')}>
+            <FileText size={19} strokeWidth={2} color={colors.text60} />
+            <span style={profileStyles.rowText}>
+              <span style={profileStyles.rowTitle}>Privacy Policy</span>
+              <span style={profileStyles.rowSub}>Opens in your browser · needs internet</span>
+            </span>
+            <ExternalLinkIcon size={15} strokeWidth={2.2} color={colors.text35} style={profileStyles.out} />
+          </button>
+        </div>
       </div>
 
       <BottomNav />
@@ -331,6 +368,8 @@ const profileStyles: Record<string, React.CSSProperties> = {
   rowTitle: { fontSize: 14, fontWeight: 700 },
   rowSub: { fontSize: 11.5, fontWeight: 500, color: colors.text50 },
   panel: { borderTop: '1px solid ' + colors.border, padding: 6, display: 'flex', flexDirection: 'column', gap: 2, animation: 'at-softIn 0.2s ease both' },
+  divider: { height: 1, margin: '0 16px', background: colors.border },
+  out: { flex: 'none' },
   panelNote: { margin: 0, padding: '10px 12px', fontSize: 12.5, fontWeight: 500, lineHeight: 1.5, color: colors.text50 },
   option: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 12px', border: 0, borderRadius: 12, background: 'transparent', color: colors.text, fontFamily: 'inherit', textAlign: 'left', cursor: 'pointer' },
   optionTitle: { fontSize: 13.5, fontWeight: 700 },

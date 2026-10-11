@@ -22,6 +22,7 @@ vi.mock('../api/client', async (importOriginal) => {
       getBlocked: vi.fn(),
       unblockPeer: vi.fn(),
       getRequests: vi.fn(), // BottomNav's badge
+      openLink: vi.fn(),
     },
   };
 });
@@ -253,5 +254,27 @@ describe('ProfileScreen — blocked users', () => {
     expect(row).not.toHaveTextContent('None');
     await userEvent.click(row);
     expect(screen.getByText('Could not load the block list.')).toBeInTheDocument();
+  });
+});
+
+describe('ProfileScreen — links to our pages', () => {
+  it('opens the privacy policy and the safety page through the core, by id', async () => {
+    mocked.openLink.mockResolvedValue({ opened: true, url: 'https://techyskitter.com/anytime/privacy-policy' });
+    open();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Privacy Policy/ }));
+    expect(mocked.openLink).toHaveBeenLastCalledWith('privacy');
+
+    await userEvent.click(screen.getByRole('button', { name: /Safety and reporting/ }));
+    expect(mocked.openLink).toHaveBeenLastCalledWith('child-safety');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('shows where the page is when no browser opened', async () => {
+    mocked.openLink.mockResolvedValue({ opened: false, url: 'https://techyskitter.com/anytime/child-safety' });
+    open();
+
+    await userEvent.click(await screen.findByRole('button', { name: /Safety and reporting/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('techyskitter.com/anytime/child-safety');
   });
 });

@@ -4,6 +4,8 @@
 
 #include <unordered_set>
 
+#include <QCoreApplication>
+#include <QDesktopServices>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -11,7 +13,9 @@
 #include "adapters/http/JsonMapping.h"
 #include "adapters/http/Router.h"
 #include "adapters/http/SseHub.h"
+#include "adapters/support/SupportLinks.h"
 #include "core/AppCore.h"
+#include "core/log/Log.h"
 #include "core/ports/IRadioController.h"
 #include "core/services/AccountService.h"
 #include "core/services/BlockService.h"
@@ -539,6 +543,108 @@ void registerApiRoutes(Router& router, AppCore& core, SseHub&)
                    }
                    const Result r = core.blocks().unblock(*peerId);
                    return r.isOk() ? Response::noContent() : fromResult(r);
+               });
+
+    // ── Reports ─────────────────────────────────────────────────────────────
+    //
+    // Two things happen, and only the first can be relied on.
+    //
+    //   1. The peer is BLOCKED, here and now. This is what protects the user, it
+    //      needs no network, and it has happened by the time this returns.
+    //   2. A report email is DRAFTED in the phone's mail app. There is no server
+    //      to post a report to (see adapters/support/SupportLinks.h), and the
+    //      app is used offline: the mail app holds the message in its outbox and
+    //      sends it when the phone is next online. Whether a mail app opened is
+    //      reported back, so the page can show the address when none did.
+    //
+    //   POST api/reports   { "peerId": "...", "reason": "child_safety" | ... }
+    router.add(Method::Post, QStringLiteral("reports"),
+               [&core](const Request& request, const PathParams&) -> Response {
+                   const auto body = parseBody(request);
+                   if (!body) {
+                       return Response::error(400, "invalid_argument",
+                                              QStringLiteral("Expected a JSON object."));
+                   }
+                   const auto peerId = PeerId::fromHex(
+                       body->value(QStringLiteral("peerId")).toString().toStdString());
+                   if (!peerId) {
+                       return Response::error(400, "invalid_argument",
+                                              QStringLiteral("Malformed peer id."));
+                   }
+                   const auto reason = support::reportReasonFromString(
+                       body->value(QStringLiteral("reason")).toString());
+                   if (!reason) {
+                       return Response::error(400, "invalid_argument",
+                                              QStringLiteral("Unknown report reason."));
+                   }
+
+                   auto account = core.accounts().current();
+                   if (account.isError()) return fromResult(account.result());
+                   if (!account.value()) {
+                       return Response::error(412, "precondition_failed",
+                                              QStringLiteral("Set up an account first."));
+                   }
+
+                   // Block first: if the mail app never opens, the user is still
+                   // rid of them, and that is the half that cannot wait.
+                   if (const Result r = core.blocks().block(*peerId); r.isError()) {
+                       return fromResult(r);
+                   }
+
+                   // The block list is where a name for this peer is certain to
+                   // be by now, whether they were a contact or a stranger.
+                   std::string reportedName;
+                   if (auto blocked = core.blocks().list(); blocked.isOk()) {
+                       for (const BlockedPeer& row : blocked.value()) {
+                           if (row.peerId == *peerId) reportedName = row.displayName;
+                       }
+                   }
+
+                   support::ReportDetails details;
+                   details.reason         = *reason;
+                   details.reportedHandle = json::handleFor(reportedName, *peerId);
+                   details.reportedPeerId = QString::fromStdString(peerId->toHex());
+                   details.reporterHandle =
+                       json::handleFor(account.value()->username, account.value()->peerId);
+                   details.reporterPeerId =
+                       QString::fromStdString(account.value()->peerId.toHex());
+                   details.appVersion     = QCoreApplication::applicationVersion();
+
+                   const bool opened = QDesktopServices::openUrl(support::reportMailto(details));
+                   AT_LOG_INFO("report", "{} reported and blocked; mail draft {}",
+                               peerId->toHex(), opened ? "opened" : "could not be opened");
+
+                   QJsonObject out;
+                   out.insert(QStringLiteral("emailOpened"), opened);
+                   out.insert(QStringLiteral("email"), QString::fromLatin1(support::kSupportEmail));
+                   return Response::json(200, compact(out));
+               });
+
+    // ── Links out ───────────────────────────────────────────────────────────
+    //
+    // Opens one of OUR pages in the phone's browser. Loading it in the WebView
+    // would replace the app with a website, and the app has no back button to
+    // return from it. The page names the link by id and never supplies a URL.
+    //
+    //   POST api/links/open   { "link": "privacy" | "child-safety" }
+    router.add(Method::Post, QStringLiteral("links/open"),
+               [](const Request& request, const PathParams&) -> Response {
+                   const auto body = parseBody(request);
+                   if (!body) {
+                       return Response::error(400, "invalid_argument",
+                                              QStringLiteral("Expected a JSON object."));
+                   }
+                   const auto url = support::externalLink(
+                       body->value(QStringLiteral("link")).toString());
+                   if (!url) {
+                       return Response::error(404, "not_found", QStringLiteral("Unknown link."));
+                   }
+
+                   QJsonObject out;
+                   out.insert(QStringLiteral("opened"), QDesktopServices::openUrl(*url));
+                   // Sent back so the page can show it when no browser answered.
+                   out.insert(QStringLiteral("url"), url->toString());
+                   return Response::json(200, compact(out));
                });
 }
 

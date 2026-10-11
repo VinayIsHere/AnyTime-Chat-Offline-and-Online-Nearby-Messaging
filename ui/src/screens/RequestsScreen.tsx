@@ -4,6 +4,7 @@ import { UserPlus } from 'lucide-react';
 
 import Screen from '../components/Screen';
 import BottomNav from '../components/BottomNav';
+import ReportSheet from '../components/ReportSheet';
 import { colors, motion } from '../theme/theme';
 import { api, type ChatRequest } from '../api/client';
 import { onEvent } from '../api/events';
@@ -23,6 +24,9 @@ export default function RequestsScreen() {
 
   const [requests, setRequests] = useState<ChatRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  // The request being reported. Held as the whole request, not an id, so the
+  // sheet still knows who it is about after the card behind it has gone.
+  const [reporting, setReporting] = useState<ChatRequest | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,21 +125,46 @@ export default function RequestsScreen() {
                 </button>
               </div>
 
-              {/* Quieter than the two buttons above on purpose: it is the
-                  strong option, and it can be undone from Profile › Blocked. */}
-              <button
-                style={requestStyles.block}
-                disabled={busy === r.id}
-                onClick={() => decline(r, true)}
-              >
-                Decline and block
-              </button>
+              {/* Quieter than the two buttons above on purpose: these are the
+                  strong options. A block can be undone from Profile › Blocked. */}
+              <div style={requestStyles.quiet}>
+                <button
+                  style={requestStyles.block}
+                  disabled={busy === r.id}
+                  onClick={() => decline(r, true)}
+                >
+                  Decline and block
+                </button>
+                <span style={requestStyles.dot} aria-hidden="true">·</span>
+                {/* A greeting is the first thing a stranger can send, so it is
+                    also the first place someone may need to report from. */}
+                <button
+                  style={requestStyles.block}
+                  disabled={busy === r.id}
+                  onClick={() => setReporting(r)}
+                  aria-label={'Report ' + r.handle}
+                >
+                  Report
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
 
       <BottomNav requestCount={requests.length} />
+
+      {reporting && (
+        <ReportSheet
+          peerId={reporting.peerId}
+          handle={reporting.handle}
+          onClose={() => setReporting(null)}
+          // Reporting blocks them, and the core drops a blocked person's
+          // waiting request with it — so the card goes too.
+          onReported={() =>
+            setRequests((current) => current.filter((x) => x.peerId !== reporting.peerId))}
+        />
+      )}
     </Screen>
   );
 }
@@ -160,6 +189,8 @@ const requestStyles: Record<string, React.CSSProperties> = {
   greeting: { margin: 0, padding: '11px 13px', borderRadius: 13, background: colors.fillSofter, fontSize: 13.5, fontWeight: 500, lineHeight: 1.5, color: colors.text70 },
   actions: { display: 'flex', gap: 9 },
   decline: { flex: 1, height: 42, borderRadius: 13, border: '1px solid ' + colors.borderStrong, background: 'transparent', color: colors.text70, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'background ' + motion.fast },
-  block: { alignSelf: 'center', padding: '2px 6px', border: 0, background: 'transparent', color: colors.danger, fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' },
+  quiet: { alignSelf: 'center', display: 'flex', alignItems: 'center', gap: 4 },
+  dot: { color: colors.text35, fontSize: 12.5, fontWeight: 700 },
+  block: { padding: '2px 6px', border: 0, background: 'transparent', color: colors.danger, fontSize: 12.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' },
   accept: { flex: 1.4, height: 42, borderRadius: 13, border: 0, background: colors.accent, color: colors.white, fontSize: 13.5, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'background ' + motion.fast },
 };

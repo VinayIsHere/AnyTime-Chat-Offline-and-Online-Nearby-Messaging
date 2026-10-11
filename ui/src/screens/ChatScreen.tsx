@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MoreVertical, Send, Bluetooth, Check, Clock, ImagePlus, RotateCw, Ban } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Send, Bluetooth, Check, Clock, ImagePlus, RotateCw, Ban, Flag } from 'lucide-react';
+import ReportSheet from '../components/ReportSheet';
 import Screen from '../components/Screen';
 import { colors, motion } from '../theme/theme';
 import { api, ApiError, type ChatSummary, type DeliveryStatus, type Message } from '../api/client';
@@ -29,6 +30,7 @@ export default function ChatScreen() {
   const [attachError, setAttachError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [blockBusy, setBlockBusy] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   // Local blob URLs for photos we are sending, keyed by clientMessageId — the
   // one id that survives the swap from the optimistic row to the stored one, so
@@ -279,6 +281,16 @@ export default function ChatScreen() {
                 <Ban size={16} strokeWidth={2.2} />
                 {chat.blocked ? 'Unblock ' : 'Block '}{chat.handle}
               </button>
+              {/* Offered whether or not they are already blocked: blocking
+                  stops them, reporting tells us about them. */}
+              <button
+                role="menuitem"
+                style={{ ...chatStyles.menuItem, color: colors.danger }}
+                onClick={() => { setMenuOpen(false); setReporting(true); }}
+              >
+                <Flag size={16} strokeWidth={2.2} />
+                Report {chat.handle}
+              </button>
             </div>
           </>
         )}
@@ -392,6 +404,17 @@ export default function ChatScreen() {
           </div>
           <button style={chatStyles.send} onClick={send} aria-label="Send"><Send size={20} strokeWidth={2} /></button>
         </div>
+      )}
+
+      {reporting && chat && (
+        <ReportSheet
+          peerId={chat.peerId}
+          handle={chat.handle}
+          onClose={() => setReporting(false)}
+          // Reporting blocks them, so the composer gives way to the blocked bar
+          // behind the sheet — the same state the Block item leaves.
+          onReported={() => setChat((c) => (c ? { ...c, blocked: true } : c))}
+        />
       )}
     </Screen>
   );

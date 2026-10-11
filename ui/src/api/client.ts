@@ -109,6 +109,19 @@ export interface BluetoothStatus {
 
 export type DeliveryStatus = 'queued' | 'sent' | 'delivered' | 'read' | 'failed';
 
+/** Mirrors support::ReportReason in adapters/support/SupportLinks.h. */
+export type ReportReason = 'child_safety' | 'sexual_content' | 'harassment' | 'spam' | 'other';
+
+export interface ReportOutcome {
+  /** False when the phone had no mail app to hand the draft to. */
+  emailOpened: boolean;
+  /** Where reports go, so the UI never has its own copy of the address. */
+  email: string;
+}
+
+/** The pages on our website the app may open, by id. The core holds the URLs. */
+export type ExternalLink = 'privacy' | 'child-safety';
+
 /**
  * An image attached to a message. A REFERENCE, never the bytes — the chat list
  * would otherwise be a multi-megabyte JSON document. Fetch the image itself
@@ -261,6 +274,19 @@ export const api = {
   blockPeer: (peerId: string) => post<void>('blocked', { peerId }),
   unblockPeer: (peerId: string) =>
     request<void>(`blocked/${peerId}`, { method: 'DELETE' }),
+
+  // ── Safety ────────────────────────────────────────────────────────────────
+  /**
+   * Blocks the peer at once, then opens the phone's mail app with a report to
+   * us filled in. There is no server to send a report to, so the email is the
+   * report — and offline, the mail app sends it later. See ReportSheet.
+   */
+  reportPeer: (peerId: string, reason: ReportReason) =>
+    post<ReportOutcome>('reports', { peerId, reason }),
+
+  /** Opens one of our own pages in the phone's browser, never in this WebView. */
+  openLink: (link: ExternalLink) =>
+    post<{ opened: boolean; url: string }>('links/open', { link }),
 
   // ── Media ─────────────────────────────────────────────────────────────────
 
